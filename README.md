@@ -71,6 +71,32 @@ generate`. Automatic signing has to register the App ID under your team, and
 Launch with the `-autostart` argument to start the warmer automatically
 (used for automated UI verification).
 
+## Tests & lint
+
+```bash
+make ios-test   # build + run the unit tests on the Simulator
+make check-ios  # SwiftLint + swift-format lint (no changes)
+make format-ios # apply swift-format in place
+```
+
+Unit tests live in `HandWarmerTests` and run against the simulator (no signing,
+no device). Style is split in two: [SwiftLint](https://github.com/realm/SwiftLint)
+(`.swiftlint.yml`) owns naming and complexity rules, and swift-format — bundled
+with Xcode, configured by `.swift-format` — owns layout. Both run with
+`--strict`, so a warning fails the check.
+
+`brew install xcodegen swiftlint xcbeautify` gets the tooling; xcbeautify is
+optional and only prettifies the build output.
+
+## CI
+
+[`.github/workflows/ios-ci.yml`](.github/workflows/ios-ci.yml) runs on every
+push and pull request against `master`: it regenerates the project with
+XcodeGen, lints, builds for testing, and runs the tests on an iPhone 17 Pro
+simulator under Xcode 26. Everything is simulator-only and unsigned, so the
+workflow needs no secrets. The `.xcresult` bundle is uploaded as an artifact for
+7 days when a run fails.
+
 ## Requirements
 
 - iOS 17.0+

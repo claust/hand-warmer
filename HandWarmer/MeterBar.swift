@@ -53,10 +53,12 @@ struct MeterBar: View {
                     .fill(Color.white.opacity(0.08))
 
                 Capsule()
-                    .fill(LinearGradient(
-                        gradient: gradient,
-                        startPoint: .leading,
-                        endPoint: gradientEndPoint))
+                    .fill(
+                        LinearGradient(
+                            gradient: gradient,
+                            startPoint: .leading,
+                            endPoint: gradientEndPoint)
+                    )
                     .frame(width: fillWidth(in: width))
                     .shadow(color: valueColor.opacity(0.5), radius: 8)
 
@@ -106,15 +108,19 @@ extension Gradient {
 
 #Preview {
     VStack(spacing: 18) {
-        MeterBar(title: "HEAT", systemImage: "thermometer.medium",
-                 valueText: "Warm", fraction: 0.45,
-                 gradient: .heat, valueColor: .yellow,
-                 ticks: [0.30, 0.60, 0.85])
-        ForEach([(0.72, Color.green), (0.35, .green), (0.15, .yellow), (0.08, .red)],
-                id: \.0) { level, color in
-            MeterBar(title: "BATTERY", systemImage: "battery.75percent",
-                     valueText: "\(Int(level * 100)) %", fraction: level,
-                     gradient: .battery(color), span: .fill, valueColor: color)
+        MeterBar(
+            title: "HEAT", systemImage: "thermometer.medium",
+            valueText: "Warm", fraction: 0.45,
+            gradient: .heat, valueColor: .yellow,
+            ticks: [0.30, 0.60, 0.85])
+        ForEach(
+            [(0.72, Color.green), (0.35, .green), (0.15, .yellow), (0.08, .red)],
+            id: \.0
+        ) { level, color in
+            MeterBar(
+                title: "BATTERY", systemImage: "battery.75percent",
+                valueText: "\(Int(level * 100)) %", fraction: level,
+                gradient: .battery(color), span: .fill, valueColor: color)
         }
     }
     .padding()

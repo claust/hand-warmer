@@ -1,0 +1,62 @@
+# SwiftLint configuration for the Hand Warmer app.
+# Run locally with `make lint-ios` (brew install swiftlint). CI runs
+# `swiftlint lint --quiet --strict`, which promotes every warning to an error so
+# any violation blocks the merge, not just error-level rules.
+
+included:
+  - HandWarmer
+  - HandWarmerTests
+
+# The generated Xcode project and build output are gitignored, but exclude them
+# defensively so a local lint run never walks into generated sources.
+excluded:
+  - HandWarmer.xcodeproj
+  - build
+  - build-device
+  - DerivedData
+
+line_length:
+  warning: 120
+  error: 160
+  ignores_comments: true
+  ignores_urls: true
+
+# SwiftUI view bodies legitimately run long; keep these generous so they inform
+# without failing CI over ordinary view code.
+type_body_length:
+  warning: 400
+  error: 600
+
+function_body_length:
+  warning: 80
+  error: 150
+
+# The flame is drawn from geometry and time, where single-letter names (w, h, t)
+# are the clearest thing to call a width, a height and a time.
+identifier_name:
+  min_length:
+    warning: 1
+    error: 1
+
+# `drawFlame` takes a geometry-plus-time bundle (7 arguments); a private drawing
+# helper is exactly where that is fine.
+function_parameter_count:
+  warning: 8
+  error: 10
+
+disabled_rules:
+  - todo # TODO/FIXME comments are tracked elsewhere, not a lint gate.
+  # Formatting is owned by swift-format (`make format-ios`, Xcode's bundled
+  # tool), so SwiftLint must not fight its output: swift-format puts the opening
+  # brace on its own line when a signature wraps, and adds trailing commas to
+  # multi-line collection literals. Both are deliberate swift-format defaults
+  # that these two rules would otherwise flag.
+  - opening_brace
+  - trailing_comma
+
+opt_in_rules:
+  - empty_count
+  - closure_spacing
+  - contains_over_first_not_nil
+  - first_where
+  - toggle_bool
