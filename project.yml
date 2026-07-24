@@ -22,8 +22,9 @@ targets:
       path: HandWarmer/Info.plist
       properties:
         CFBundleDisplayName: Hand Warmer
-        UILaunchScreen:
-          UIColorName: ""
+        # Present but empty: opts into the modern launch-screen system (and
+        # full-size rendering on every device) using the default background.
+        UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         NSCameraUsageDescription: >-

@@ -27,10 +27,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Hand Warmer uses high-accuracy GPS to keep the location chip busy, which helps warm up the device.</string>
 	<key>UILaunchScreen</key>
-	<dict>
-		<key>UIColorName</key>
-		<string></string>
-	</dict>
+	<dict/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
