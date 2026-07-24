@@ -87,9 +87,18 @@ pr_node_id() {
 # returns gh's exit status, so callers can tell "query succeeded, no review yet"
 # (rc 0, empty) apart from "query failed" (rc != 0). stderr is kept for the
 # caller to surface on failure rather than swallowed here.
+#
+# The max is taken in the shell, not in jq: `gh api --paginate` applies --jq to
+# each page separately and concatenates the results, so a per-page `max_by`
+# emits one timestamp per page once a PR has more than 30 reviews — and the
+# caller then compares a multi-line string. Emitting every match and taking the
+# last after `sort` is correct for any number of pages (LC_ALL=C above keeps
+# ISO-8601 byte ordering deterministic). `--slurp` would be the other fix, but
+# gh rejects it alongside --jq. pipefail (set above) keeps gh's failure status.
 latest_copilot_ts() {
   gh api "repos/$OWNER/$REPO/pulls/$PR/reviews" --paginate --jq \
-    "[.[] | select(.user.login==\"$BOT_REVIEW_LOGIN\" or .user.login==\"$BOT_DISPLAY_LOGIN\")] | max_by(.submitted_at) | .submitted_at // empty"
+    ".[] | select(.user.login==\"$BOT_REVIEW_LOGIN\" or .user.login==\"$BOT_DISPLAY_LOGIN\") | .submitted_at" \
+    | sort | tail -n 1
 }
 
 case "$cmd" in
