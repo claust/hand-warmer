@@ -8,9 +8,11 @@ final class HeatEngineTests: XCTestCase {
 
     // MARK: - Heat meter bands
 
-    /// The bands are the contract between the bar and its label: they must tile
-    /// the whole meter with no gap and no overlap, or some fill level would sit
-    /// under a label that contradicts it.
+    /// The bands are the contract between the bar and its label: laid end to
+    /// end they must cover the whole meter with no gap, or some fill level
+    /// would sit under a label that contradicts it. They are closed ranges, so
+    /// neighbours share their boundary value — a level exactly on a tick
+    /// belongs to both bands, which is fine, since both agree on where it sits.
     func testBandsTileTheMeterWithoutGaps() {
         var bands = states.map(HeatEngine.band(for:))
 

@@ -115,8 +115,8 @@ lint-ios:
 		echo "swiftlint not found. Install it with: brew install swiftlint"; exit 1; }
 	swiftlint lint --quiet --strict
 
-# Lint formatting without changing anything, then run SwiftLint. This is what CI
-# gates on.
+# Run SwiftLint (via the prerequisite above), then lint formatting without
+# changing anything. This is what CI gates on.
 check-ios: lint-ios
 	@if xcrun --find swift-format >/dev/null 2>&1; then \
 		xcrun swift-format lint --strict --recursive HandWarmer HandWarmerTests; \
