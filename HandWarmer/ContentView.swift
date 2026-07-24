@@ -159,7 +159,7 @@ struct ContentView: View {
             if engine.isRunning {
                 Text("Warming on all \(engine.coreCount) cores · \(formattedTime)")
             } else {
-                Text("Screen stays on while the app is open")
+                Text("Keeps warming in your pocket — watch the Dynamic Island")
             }
         }
         .font(.footnote)
@@ -188,15 +188,7 @@ struct ContentView: View {
         return String(format: "%d:%02d", m, s)
     }
 
-    private var thermalText: String {
-        switch engine.thermalState {
-        case .nominal: return "Cool"
-        case .fair: return "Warm"
-        case .serious: return "Hot"
-        case .critical: return "Very hot"
-        @unknown default: return "Unknown"
-        }
-    }
+    private var thermalText: String { HeatEngine.label(for: engine.thermalState) }
 
     private var thermalColor: Color {
         switch engine.thermalState {

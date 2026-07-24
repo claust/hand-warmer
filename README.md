@@ -20,6 +20,29 @@ as busy as possible:
 The screen stays awake as long as the app is visible, so the warmth doesn't
 stop when you stop tapping.
 
+## In your pocket
+
+Putting the phone away no longer stops the warmer. The session moves to a Live
+Activity — an animated flame and a running clock in the Dynamic Island, plus a
+banner with the heat bar on the Lock Screen — the same way a timer behaves.
+
+Two things make that work, and both are worth knowing about:
+
+- **Background execution.** A Live Activity grants visibility, not runtime: iOS
+  suspends an ordinary app within seconds of backgrounding, and a suspended
+  busy loop warms nothing. The app therefore holds an audio session playing a
+  generated buffer of silence (`BackgroundKeepAlive`), under the `audio`
+  background mode. It is inaudible and mixes with whatever you are listening
+  to. It is also the kind of thing App Review asks about, so this is not a
+  technique to copy into a shipping app without thought.
+- **The flame's frame rate.** The Dynamic Island has no animation clock of its
+  own — it redraws only when the app pushes a new activity state, and SF Symbol
+  effects do not run there either. So the flame is animated by pushing a new
+  wobble phase about twice a second and letting SwiftUI tween the shapes in
+  between. That is a lot of traffic for ActivityKit, hence
+  `NSSupportsLiveActivitiesFrequentUpdates` in the Info.plist. The elapsed
+  clock, by contrast, is a `Text(timerInterval:)` that the system runs itself.
+
 ## Telemetry & safety
 
 - **Heat vs. battery** — two horizontal bars at the top show the trade you are
@@ -34,7 +57,9 @@ stop when you stop tapping.
   down.
 - **Critical shutdown** — if iOS reports a critical thermal state, the warmer
   switches itself off and asks you to let the phone cool down.
-- The engine also stops when the app is backgrounded — no hidden battery drain.
+- The warmer keeps running when the app is backgrounded, so the drain is no
+  longer hidden — that is exactly why the Dynamic Island shows the flame and the
+  elapsed time the whole time it is on.
 
 ## Building
 

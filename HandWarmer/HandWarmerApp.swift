@@ -22,11 +22,11 @@ struct HandWarmerApp: App {
             // banner, permission prompt), which a .background-only reset misses.
             UIApplication.shared.isIdleTimerDisabled = phase == .active
 
-            if phase == .background {
-                // Background execution would be killed by the watchdog anyway;
-                // stop cleanly so we don't burn battery while invisible.
-                engine.stop()
-            }
+            // Backgrounding no longer stops the warmer — the engine holds an
+            // audio session to stay scheduled, and the session moves to the
+            // Dynamic Island. Drive the island harder once it is what the user
+            // is actually looking at.
+            engine.setBackgrounded(phase != .active)
         }
     }
 }

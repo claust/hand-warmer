@@ -49,11 +49,17 @@ final class HeatEngine: NSObject, ObservableObject {
     private var timer: AnyCancellable?
     private var heatTimer: AnyCancellable?
     private var bandEntered = Date()
+    private var startedAt = Date()
     private var centralManager: CBCentralManager?
     private var locationManager: CLLocationManager?
+    private let keepAlive = BackgroundKeepAlive()
+    private let island = HeatActivityController()
 
     override init() {
         super.init()
+        // `island` is owned by this engine and torn down with it, so it can
+        // never call back into a deallocated self.
+        island.snapshot = { [unowned self] in self.activityState() }
         UIDevice.current.isBatteryMonitoringEnabled = true
         refreshBattery()
         thermalState = ProcessInfo.processInfo.thermalState
@@ -82,7 +88,15 @@ final class HeatEngine: NSObject, ObservableObject {
         // spin for the lifetime of the process.
         stopFlag.set(true)
         setTorch(on: false)
+        keepAlive.stop()
+        island.end()
         NotificationCenter.default.removeObserver(self)
+    }
+
+    /// Told by the scene phase. Only affects how hard the Dynamic Island is
+    /// driven — the heat itself runs the same either way.
+    func setBackgrounded(_ backgrounded: Bool) {
+        island.setBackgrounded(backgrounded)
     }
 
     var lowBattery: Bool {
@@ -107,6 +121,11 @@ final class HeatEngine: NSObject, ObservableObject {
         criticalShutdown = false
         sessionSeconds = 0
         bandEntered = Date()
+        startedAt = Date()
+
+        // Before the workers, so we are already holding the audio session by
+        // the time the user can plausibly swipe up out of the app.
+        keepAlive.start()
 
         stopFlag = Flag()
         let flag = stopFlag
@@ -124,6 +143,7 @@ final class HeatEngine: NSObject, ObservableObject {
             .sink { [weak self] _ in self?.sessionSeconds += 1 }
 
         syncBoosters()
+        island.begin(coreCount: coreCount)
     }
 
     func stop() {
@@ -132,6 +152,8 @@ final class HeatEngine: NSObject, ObservableObject {
         stopFlag.set(true)
         timer = nil
         syncBoosters()
+        island.end()
+        keepAlive.stop()
     }
 
     /// Pure math busy loop. The work is meaningless on purpose — its only job
@@ -247,6 +269,39 @@ final class HeatEngine: NSObject, ObservableObject {
         let rate = isRunning ? 0.3 : 0.06
         let next = heatLevel + (target - heatLevel) * rate
         if abs(next - heatLevel) > 0.0005 { heatLevel = next }
+    }
+
+    // MARK: - Live Activity
+
+    /// Short label for a thermal state, shared by the main screen and the
+    /// Dynamic Island so the two readouts can never disagree.
+    static func label(for state: ProcessInfo.ThermalState) -> String {
+        switch state {
+        case .nominal: return "Cool"
+        case .fair: return "Warm"
+        case .serious: return "Hot"
+        case .critical: return "Very hot"
+        @unknown default: return "Unknown"
+        }
+    }
+
+    /// Current readings for the island. `flamePhase` is filled in by the
+    /// controller, which owns the animation clock.
+    private func activityState() -> HeatActivityAttributes.ContentState {
+        // CPU is unconditional while warming, matching the locked chip in the
+        // booster bar.
+        var symbols = ["cpu"]
+        if gpsBoost { symbols.append("location.fill") }
+        if bluetoothBoost { symbols.append("dot.radiowaves.left.and.right") }
+        if torchBoost { symbols.append("flashlight.on.fill") }
+
+        return HeatActivityAttributes.ContentState(
+            startedAt: startedAt,
+            heatLevel: heatLevel,
+            thermalLabel: Self.label(for: thermalState),
+            batteryLevel: batteryLevel,
+            flamePhase: 0,
+            boosterSymbols: symbols)
     }
 
     // MARK: - Telemetry

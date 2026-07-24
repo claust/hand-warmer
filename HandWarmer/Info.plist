@@ -26,6 +26,14 @@
 	<string>Hand Warmer switches on the camera's torch LED, which warms the device. It never captures photo or video.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Hand Warmer uses high-accuracy GPS to keep the location chip busy, which helps warm up the device.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

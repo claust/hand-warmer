@@ -7,22 +7,64 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0A4DE01A231B150AA0E68A94 /* MeterBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA5DB32B16A8D8CFB5F1F45 /* MeterBar.swift */; };
+		0C7D62BC189BB52291B5E8A4 /* HeatLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92B14FB099FBCCE71F832FCD /* HeatLiveActivity.swift */; };
 		17C292E812E055659013331C /* HandWarmerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 843435006CE46C3C1E612E6A /* HandWarmerApp.swift */; };
+		3091A83F6BD1D346C74B737E /* HeatActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B2CF17996A1BFDD675D9A23 /* HeatActivityController.swift */; };
+		30F737A32EC1350008D15C1D /* HeatActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DAD090358E0416E55FF8714 /* HeatActivityAttributes.swift */; };
+		8055DA70F1ABEB75A9009160 /* FlameShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20BAB95359005C76AA59DF3 /* FlameShape.swift */; };
+		80C0C411E75BD5E23D6819DA /* FlameShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20BAB95359005C76AA59DF3 /* FlameShape.swift */; };
 		8AAB98D911C7727B385B11A9 /* HeatEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DB451119EAD100546BC42F5 /* HeatEngine.swift */; };
+		A7C3640016A872FCFA9FD0D4 /* HeatActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DAD090358E0416E55FF8714 /* HeatActivityAttributes.swift */; };
+		C21B822CFCC361AA0E1D93AF /* MeterBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA5DB32B16A8D8CFB5F1F45 /* MeterBar.swift */; };
 		CB0078877680FE19F0E73D81 /* FlameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E24262ACB312E96FABB47794 /* FlameView.swift */; };
-		D325A741392F5E964EDF05D5 /* MeterBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50D369EDC920F32D26AE387A /* MeterBar.swift */; };
+		E8BA792EFDAD415426950551 /* HandWarmerWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1871240996F6A3407CCC36EA /* HandWarmerWidgetBundle.swift */; };
 		EB060097450EB0D296668E35 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 658DDDE5F885CABFD917B218 /* Assets.xcassets */; };
+		EB625A44BA9BBD3424F76FE5 /* BackgroundKeepAlive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 390441F2EE87D41951890A01 /* BackgroundKeepAlive.swift */; };
 		F2FB8F21C86FF0AFEDE02EEE /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEBB35BCC4C0589E20CC3286 /* ContentView.swift */; };
+		FD11CDAECCF259B27B672191 /* HandWarmerWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = EB2A0458C1B79A5D2F29C9B3 /* HandWarmerWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		49BD5791F23145878A31A535 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3051DFA465ACA076690D7AB2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A428B6DC56E116FDEE4583C6;
+			remoteInfo = HandWarmerWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F4EE6393694FA8A295A8369B /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				FD11CDAECCF259B27B672191 /* HandWarmerWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		0601F7AF6550BB6145A8C387 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		0DB451119EAD100546BC42F5 /* HeatEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeatEngine.swift; sourceTree = "<group>"; };
-		50D369EDC920F32D26AE387A /* MeterBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeterBar.swift; sourceTree = "<group>"; };
+		1871240996F6A3407CCC36EA /* HandWarmerWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandWarmerWidgetBundle.swift; sourceTree = "<group>"; };
+		1AA5DB32B16A8D8CFB5F1F45 /* MeterBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeterBar.swift; sourceTree = "<group>"; };
+		38A130A9CF9EBEB9E023B43F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		390441F2EE87D41951890A01 /* BackgroundKeepAlive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundKeepAlive.swift; sourceTree = "<group>"; };
+		4B2CF17996A1BFDD675D9A23 /* HeatActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeatActivityController.swift; sourceTree = "<group>"; };
 		658DDDE5F885CABFD917B218 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		843435006CE46C3C1E612E6A /* HandWarmerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandWarmerApp.swift; sourceTree = "<group>"; };
+		92B14FB099FBCCE71F832FCD /* HeatLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeatLiveActivity.swift; sourceTree = "<group>"; };
+		9DAD090358E0416E55FF8714 /* HeatActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeatActivityAttributes.swift; sourceTree = "<group>"; };
+		B20BAB95359005C76AA59DF3 /* FlameShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlameShape.swift; sourceTree = "<group>"; };
 		DEBB35BCC4C0589E20CC3286 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E24262ACB312E96FABB47794 /* FlameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlameView.swift; sourceTree = "<group>"; };
+		EB2A0458C1B79A5D2F29C9B3 /* HandWarmerWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = HandWarmerWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		F24E8DDD425F3B616FC032DA /* HandWarmer.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HandWarmer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -31,6 +73,7 @@
 			isa = PBXGroup;
 			children = (
 				F717A4DA44BCAC3E01A25F01 /* HandWarmer */,
+				A676EE6B5620072B27E3B9B9 /* HandWarmerWidget */,
 				762D8B39048B0B0D7D55FE26 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -39,20 +82,43 @@
 			isa = PBXGroup;
 			children = (
 				F24E8DDD425F3B616FC032DA /* HandWarmer.app */,
+				EB2A0458C1B79A5D2F29C9B3 /* HandWarmerWidget.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		8DFFCE19570BA9E4990A91B3 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				B20BAB95359005C76AA59DF3 /* FlameShape.swift */,
+				9DAD090358E0416E55FF8714 /* HeatActivityAttributes.swift */,
+				1AA5DB32B16A8D8CFB5F1F45 /* MeterBar.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		A676EE6B5620072B27E3B9B9 /* HandWarmerWidget */ = {
+			isa = PBXGroup;
+			children = (
+				1871240996F6A3407CCC36EA /* HandWarmerWidgetBundle.swift */,
+				92B14FB099FBCCE71F832FCD /* HeatLiveActivity.swift */,
+				38A130A9CF9EBEB9E023B43F /* Info.plist */,
+			);
+			path = HandWarmerWidget;
 			sourceTree = "<group>";
 		};
 		F717A4DA44BCAC3E01A25F01 /* HandWarmer */ = {
 			isa = PBXGroup;
 			children = (
 				658DDDE5F885CABFD917B218 /* Assets.xcassets */,
+				390441F2EE87D41951890A01 /* BackgroundKeepAlive.swift */,
 				DEBB35BCC4C0589E20CC3286 /* ContentView.swift */,
 				E24262ACB312E96FABB47794 /* FlameView.swift */,
 				843435006CE46C3C1E612E6A /* HandWarmerApp.swift */,
+				4B2CF17996A1BFDD675D9A23 /* HeatActivityController.swift */,
 				0DB451119EAD100546BC42F5 /* HeatEngine.swift */,
 				0601F7AF6550BB6145A8C387 /* Info.plist */,
-				50D369EDC920F32D26AE387A /* MeterBar.swift */,
+				8DFFCE19570BA9E4990A91B3 /* Shared */,
 			);
 			path = HandWarmer;
 			sourceTree = "<group>";
@@ -66,10 +132,12 @@
 			buildPhases = (
 				10CB50E52732BA47FCDAA296 /* Sources */,
 				455EFC33FEF7298CD7A85BEB /* Resources */,
+				F4EE6393694FA8A295A8369B /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				88D5FDD8880FB1A70C4E4852 /* PBXTargetDependency */,
 			);
 			name = HandWarmer;
 			packageProductDependencies = (
@@ -77,6 +145,23 @@
 			productName = HandWarmer;
 			productReference = F24E8DDD425F3B616FC032DA /* HandWarmer.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A428B6DC56E116FDEE4583C6 /* HandWarmerWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 012CB40CDD788A3228931457 /* Build configuration list for PBXNativeTarget "HandWarmerWidget" */;
+			buildPhases = (
+				250BA3E0D3D06AF440B878FE /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HandWarmerWidget;
+			packageProductDependencies = (
+			);
+			productName = HandWarmerWidget;
+			productReference = EB2A0458C1B79A5D2F29C9B3 /* HandWarmerWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -88,6 +173,9 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					643AE5BCE225B9D3CACA165B = {
+						ProvisioningStyle = Automatic;
+					};
+					A428B6DC56E116FDEE4583C6 = {
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -107,6 +195,7 @@
 			projectRoot = "";
 			targets = (
 				643AE5BCE225B9D3CACA165B /* HandWarmer */,
+				A428B6DC56E116FDEE4583C6 /* HandWarmerWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -127,17 +216,62 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EB625A44BA9BBD3424F76FE5 /* BackgroundKeepAlive.swift in Sources */,
 				F2FB8F21C86FF0AFEDE02EEE /* ContentView.swift in Sources */,
+				80C0C411E75BD5E23D6819DA /* FlameShape.swift in Sources */,
 				CB0078877680FE19F0E73D81 /* FlameView.swift in Sources */,
 				17C292E812E055659013331C /* HandWarmerApp.swift in Sources */,
+				A7C3640016A872FCFA9FD0D4 /* HeatActivityAttributes.swift in Sources */,
+				3091A83F6BD1D346C74B737E /* HeatActivityController.swift in Sources */,
 				8AAB98D911C7727B385B11A9 /* HeatEngine.swift in Sources */,
-				D325A741392F5E964EDF05D5 /* MeterBar.swift in Sources */,
+				0A4DE01A231B150AA0E68A94 /* MeterBar.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		250BA3E0D3D06AF440B878FE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8055DA70F1ABEB75A9009160 /* FlameShape.swift in Sources */,
+				E8BA792EFDAD415426950551 /* HandWarmerWidgetBundle.swift in Sources */,
+				30F737A32EC1350008D15C1D /* HeatActivityAttributes.swift in Sources */,
+				0C7D62BC189BB52291B5E8A4 /* HeatLiveActivity.swift in Sources */,
+				C21B822CFCC361AA0E1D93AF /* MeterBar.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		88D5FDD8880FB1A70C4E4852 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A428B6DC56E116FDEE4583C6 /* HandWarmerWidget */;
+			targetProxy = 49BD5791F23145878A31A535 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		23351417F1A2844C4470C181 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = HandWarmerWidget/Info.plist;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.claus.HandWarmer.Widget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
 		615961B07A3A7F3E18322860 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -236,6 +370,27 @@
 			};
 			name = Debug;
 		};
+		D6A8C329FD97E4D48AA3F2E7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = HandWarmerWidget/Info.plist;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.claus.HandWarmer.Widget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 		FDD27E390644BF0A817B3114 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -302,6 +457,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		012CB40CDD788A3228931457 /* Build configuration list for PBXNativeTarget "HandWarmerWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				23351417F1A2844C4470C181 /* Debug */,
+				D6A8C329FD97E4D48AA3F2E7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		662DDD62177C3BAEF43D9B02 /* Build configuration list for PBXNativeTarget "HandWarmer" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
