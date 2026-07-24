@@ -57,9 +57,10 @@ final class HeatEngine: NSObject, ObservableObject {
 
     override init() {
         super.init()
-        // `island` is owned by this engine and torn down with it, so it can
-        // never call back into a deallocated self.
-        island.snapshot = { [unowned self] in self.activityState() }
+        // Weak, not unowned: the controller's in-flight request task holds the
+        // controller, so it can outlive this engine by a moment and pull one
+        // last snapshot on the way out.
+        island.snapshot = { [weak self] in self?.activityState() }
         UIDevice.current.isBatteryMonitoringEnabled = true
         refreshBattery()
         thermalState = ProcessInfo.processInfo.thermalState

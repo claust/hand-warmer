@@ -12,7 +12,13 @@ import Foundation
 final class HeatActivityController {
 
     /// Pulled on every tick for the current readings. Set by `HeatEngine`.
-    var snapshot: (() -> HeatActivityAttributes.ContentState)?
+    /// Returns nil once the engine is gone — `begin`'s task holds this
+    /// controller, so it can briefly outlive its owner.
+    var snapshot: (() -> HeatActivityAttributes.ContentState?)?
+
+    private func currentState() -> HeatActivityAttributes.ContentState? {
+        snapshot?() ?? nil
+    }
 
     private var activity: Activity<HeatActivityAttributes>?
     private var ticker: AnyCancellable?
@@ -61,7 +67,7 @@ final class HeatActivityController {
             await endStrays()
             // The warmer may have been switched off again while we waited.
             guard self.wantsActivity, self.activity == nil,
-                  let state = self.snapshot?() else { return }
+                  let state = self.currentState() else { return }
             do {
                 self.activity = try Activity.request(
                     attributes: HeatActivityAttributes(coreCount: coreCount),
@@ -106,7 +112,7 @@ final class HeatActivityController {
     }
 
     private func push() {
-        guard let activity, var state = snapshot?() else { return }
+        guard let activity, var state = currentState() else { return }
         phase &+= 1
         state.flamePhase = phase
         let content = ActivityContent(state: state,

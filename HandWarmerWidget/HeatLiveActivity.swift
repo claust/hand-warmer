@@ -138,8 +138,9 @@ private struct LockScreenBanner: View {
 /// A count-up clock the system runs itself. Without it we would have to push a
 /// new activity state every second just to move the seconds digit.
 private func elapsed(from start: Date) -> Text {
-    Text(timerInterval: start...start.addingTimeInterval(24 * 60 * 60),
-         countsDown: false)
+    // Open-ended rather than capped: any fixed end is a cliff where the clock
+    // silently stops while the warmer is still running.
+    Text(timerInterval: start...Date.distantFuture, countsDown: false)
 }
 
 /// Matches `ContentView.thermalColor`. Keyed off the label rather than a

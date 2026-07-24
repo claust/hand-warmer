@@ -20,27 +20,39 @@ final class BackgroundKeepAlive {
         guard player == nil else { return }
         let session = AVAudioSession.sharedInstance()
         do {
+            // Build the player before activating the session: a throw between
+            // the two would otherwise leave us holding audio focus with nothing
+            // playing, which is both rude and useless.
+            let player = try AVAudioPlayer(data: Self.silence)
+            player.numberOfLoops = -1
+            player.volume = 1  // the samples themselves are silent
+
             // .playback is the only category that survives backgrounding;
             // .mixWithOthers keeps us from stopping the user's music, and
             // .duckOthers is deliberately *not* used — we are silent anyway.
             try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
             try session.setActive(true)
 
-            let player = try AVAudioPlayer(data: Self.silence)
-            player.numberOfLoops = -1
-            player.volume = 1  // the samples themselves are silent
             player.play()
             self.player = player
         } catch {
             // Without this the warmer simply stops when backgrounded, as it did
-            // before. Nothing else depends on it, so fail quietly.
+            // before. Nothing else depends on it, so fail quietly — but do not
+            // leave a half-configured session behind.
             player = nil
+            try? session.setActive(false, options: [.notifyOthersOnDeactivation])
             return
         }
 
         // A phone call (or any other interruption) stops the player, and
         // nothing restarts it on its own — the warmer would then die at the
         // next suspend, minutes after the call ended.
+        //
+        // This deliberately resumes on every `.ended` interruption rather than
+        // only when the system sets `.shouldResume`. That flag exists so apps
+        // don't barge back in over whatever is playing now; this player is
+        // silent and mixes with others, so resuming costs the user nothing,
+        // while *not* resuming silently kills a running warming session.
         observer = NotificationCenter.default.addObserver(
             forName: AVAudioSession.interruptionNotification,
             object: session, queue: .main) { [weak self] note in
