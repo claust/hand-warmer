@@ -46,8 +46,8 @@ jobs:
       - name: Install tooling (XcodeGen + SwiftLint + xcbeautify)
         run: brew install xcodegen swiftlint xcbeautify
 
-      # HandWarmer.xcodeproj is committed, but project.yml is the source of
-      # truth — regenerate so a stale checked-in project can't mask a mistake.
+      # HandWarmer.xcodeproj is gitignored — project.yml is the source of truth,
+      # so the project has to be generated before anything can build.
       - name: Generate Xcode project
         run: xcodegen generate
 
