@@ -56,30 +56,32 @@ struct ContentView: View {
     }
 
     private var header: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 14) {
             Text("Hand Warmer")
                 .font(.system(.largeTitle, design: .rounded).weight(.bold))
-            HStack(spacing: 14) {
-                thermalBadge
-                batteryBadge
+
+            VStack(spacing: 14) {
+                MeterBar(
+                    title: "HEAT",
+                    systemImage: "thermometer.medium",
+                    valueText: thermalText,
+                    fraction: engine.heatLevel,
+                    gradient: .heat,
+                    valueColor: thermalColor,
+                    ticks: [0.30, 0.60, 0.85],
+                    accessibilityValue: "\(thermalText), \(Int(engine.heatLevel * 100)) percent")
+
+                MeterBar(
+                    title: "BATTERY",
+                    systemImage: batteryIcon,
+                    valueText: batteryText,
+                    fraction: batteryFraction,
+                    gradient: .battery(batteryColor),
+                    span: .fill,
+                    valueColor: batteryColor)
             }
+            .padding(.horizontal, 4)
         }
-    }
-
-    private var thermalBadge: some View {
-        Label(thermalText, systemImage: "thermometer.medium")
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(thermalColor)
-            .padding(.horizontal, 12).padding(.vertical, 6)
-            .background(.ultraThinMaterial, in: Capsule())
-    }
-
-    private var batteryBadge: some View {
-        Label(batteryText, systemImage: batteryIcon)
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(engine.lowBattery ? .red : .green)
-            .padding(.horizontal, 12).padding(.vertical, 6)
-            .background(.ultraThinMaterial, in: Capsule())
     }
 
     private var flameAndButton: some View {
@@ -206,14 +208,44 @@ struct ContentView: View {
         }
     }
 
+    /// Debug hook, like `-autostart`: `-battery 0.15` pins the readout so the
+    /// low-battery colours can be checked without draining a real phone.
+    private var batteryLevel: Float {
+        let args = ProcessInfo.processInfo.arguments
+        if let i = args.firstIndex(of: "-battery"), i + 1 < args.count,
+           let override = Float(args[i + 1]) {
+            // A negative value still means "unknown", matching
+            // UIDevice.batteryLevel, but nothing above full is a real reading.
+            return min(override, 1)
+        }
+        return engine.batteryLevel
+    }
+
+    private var batteryColor: Color {
+        guard batteryLevel >= 0 else { return .secondary }
+        // Same thresholds as `Gradient.battery`, so the number and the tip of
+        // the bar are never two different colours.
+        switch batteryLevel {
+        case ..<0.10: return .red
+        case ..<0.20: return .yellow
+        default: return .green
+        }
+    }
+
     private var batteryText: String {
-        engine.batteryLevel < 0 ? "– %" : "\(Int(engine.batteryLevel * 100)) %"
+        batteryLevel < 0 ? "– %" : "\(Int(batteryLevel * 100)) %"
+    }
+
+    /// A device that reports no battery (the simulator) leaves the bar empty
+    /// rather than pretending to be full.
+    private var batteryFraction: Double {
+        batteryLevel < 0 ? 0 : Double(batteryLevel)
     }
 
     private var batteryIcon: String {
         if engine.batteryState == .charging { return "battery.100percent.bolt" }
-        guard engine.batteryLevel >= 0 else { return "battery.50percent" }
-        switch engine.batteryLevel {
+        guard batteryLevel >= 0 else { return "battery.50percent" }
+        switch batteryLevel {
         case ..<0.25: return "battery.25percent"
         case ..<0.55: return "battery.50percent"
         case ..<0.85: return "battery.75percent"

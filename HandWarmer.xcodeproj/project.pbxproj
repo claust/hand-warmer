@@ -10,6 +10,7 @@
 		17C292E812E055659013331C /* HandWarmerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 843435006CE46C3C1E612E6A /* HandWarmerApp.swift */; };
 		8AAB98D911C7727B385B11A9 /* HeatEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DB451119EAD100546BC42F5 /* HeatEngine.swift */; };
 		CB0078877680FE19F0E73D81 /* FlameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E24262ACB312E96FABB47794 /* FlameView.swift */; };
+		D325A741392F5E964EDF05D5 /* MeterBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50D369EDC920F32D26AE387A /* MeterBar.swift */; };
 		EB060097450EB0D296668E35 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 658DDDE5F885CABFD917B218 /* Assets.xcassets */; };
 		F2FB8F21C86FF0AFEDE02EEE /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEBB35BCC4C0589E20CC3286 /* ContentView.swift */; };
 /* End PBXBuildFile section */
@@ -17,6 +18,7 @@
 /* Begin PBXFileReference section */
 		0601F7AF6550BB6145A8C387 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		0DB451119EAD100546BC42F5 /* HeatEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeatEngine.swift; sourceTree = "<group>"; };
+		50D369EDC920F32D26AE387A /* MeterBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeterBar.swift; sourceTree = "<group>"; };
 		658DDDE5F885CABFD917B218 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		843435006CE46C3C1E612E6A /* HandWarmerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandWarmerApp.swift; sourceTree = "<group>"; };
 		DEBB35BCC4C0589E20CC3286 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -50,6 +52,7 @@
 				843435006CE46C3C1E612E6A /* HandWarmerApp.swift */,
 				0DB451119EAD100546BC42F5 /* HeatEngine.swift */,
 				0601F7AF6550BB6145A8C387 /* Info.plist */,
+				50D369EDC920F32D26AE387A /* MeterBar.swift */,
 			);
 			path = HandWarmer;
 			sourceTree = "<group>";
@@ -128,6 +131,7 @@
 				CB0078877680FE19F0E73D81 /* FlameView.swift in Sources */,
 				17C292E812E055659013331C /* HandWarmerApp.swift in Sources */,
 				8AAB98D911C7727B385B11A9 /* HeatEngine.swift in Sources */,
+				D325A741392F5E964EDF05D5 /* MeterBar.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
