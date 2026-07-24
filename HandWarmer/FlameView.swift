@@ -7,10 +7,23 @@ struct FlameView: View {
     var intensity: CGFloat
 
     var body: some View {
+        // TimelineView(.animation) redraws every frame for as long as it is in
+        // the hierarchy, so while the warmer is off keep it out entirely rather
+        // than spending a frame's work drawing nothing.
+        Group {
+            if intensity > 0.01 {
+                flame
+            } else {
+                Color.clear
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private var flame: some View {
         TimelineView(.animation) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             Canvas { ctx, size in
-                guard intensity > 0.01 else { return }
                 let base = CGPoint(x: size.width / 2, y: size.height * 0.96)
                 let height = size.height * 0.88 * intensity
                 let width = size.width * 0.62 * intensity
@@ -28,7 +41,6 @@ struct FlameView: View {
             .blur(radius: 1.5)
             .shadow(color: .orange.opacity(0.6 * intensity), radius: 30 * intensity)
         }
-        .allowsHitTesting(false)
     }
 
     private func drawFlame(ctx: inout GraphicsContext, base: CGPoint,

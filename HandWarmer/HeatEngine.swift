@@ -138,7 +138,12 @@ final class HeatEngine: NSObject, ObservableObject {
 
         if active && bluetoothBoost {
             if centralManager == nil {
-                centralManager = CBCentralManager(delegate: self, queue: .global(qos: .userInitiated))
+                // Deliver delegate callbacks on main, the same queue that
+                // syncBoosters and the UI toggles run on, so the manager is
+                // only ever touched from one thread. Scanning itself still
+                // happens on the Bluetooth hardware, and we implement no
+                // discovery callback, so nothing floods main.
+                centralManager = CBCentralManager(delegate: self, queue: .main)
             } else {
                 startScanIfPoweredOn()
             }
@@ -219,6 +224,9 @@ final class HeatEngine: NSObject, ObservableObject {
 
 extension HeatEngine: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        // A late state update (Bluetooth switched back on, say) must not
+        // resurrect a scan the user has since turned off.
+        guard isRunning, bluetoothBoost else { return }
         startScanIfPoweredOn()
     }
 }

@@ -10,6 +10,11 @@ struct HandWarmerApp: App {
             ContentView()
                 .environmentObject(engine)
                 .preferredColorScheme(.dark)
+                .onAppear {
+                    // onChange fires on transitions only, so the first active
+                    // session would otherwise never disable the idle timer.
+                    UIApplication.shared.isIdleTimerDisabled = true
+                }
         }
         .onChange(of: scenePhase) { _, phase in
             // Hold the screen awake only while we are frontmost. Tying this to
