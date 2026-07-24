@@ -214,7 +214,9 @@ struct ContentView: View {
         let args = ProcessInfo.processInfo.arguments
         if let i = args.firstIndex(of: "-battery"), i + 1 < args.count,
            let override = Float(args[i + 1]) {
-            return override
+            // A negative value still means "unknown", matching
+            // UIDevice.batteryLevel, but nothing above full is a real reading.
+            return min(override, 1)
         }
         return engine.batteryLevel
     }

@@ -261,7 +261,16 @@ final class HeatEngine: NSObject, ObservableObject {
     @objc private func thermalChanged() {
         DispatchQueue.main.async {
             let new = ProcessInfo.processInfo.thermalState
-            if new != self.thermalState { self.bandEntered = Date() }
+            if new != self.thermalState {
+                self.bandEntered = Date()
+                // Snap into the new band rather than easing across it: while
+                // the level drifted from Hot down to Warm the bar would sit in
+                // the Hot band under a "Warm" label, which is exactly the
+                // contradiction the bands exist to prevent. The view animates
+                // the jump, so it still reads as a glide.
+                let band = Self.band(for: new)
+                self.heatLevel = min(max(self.heatLevel, band.lowerBound), band.upperBound)
+            }
             self.thermalState = new
             // Safety valve: if iOS reports critical heat, shut down rather
             // than fight the system's own throttling.
