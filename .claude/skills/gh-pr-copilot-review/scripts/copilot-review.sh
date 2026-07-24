@@ -95,9 +95,15 @@ pr_node_id() {
 # last after `sort` is correct for any number of pages (LC_ALL=C above keeps
 # ISO-8601 byte ordering deterministic). `--slurp` would be the other fix, but
 # gh rejects it alongside --jq. pipefail (set above) keeps gh's failure status.
+#
+# `// empty` has to be per-item, and it is what keeps the "empty if none yet"
+# contract: a PENDING review leaves submitted_at null, jq prints that as a bare
+# `null`, and LC_ALL=C sorts `null` *above* every digit — so without it the last
+# line after `sort` is "null", which the watcher reads as a real timestamp newer
+# than any baseline. Same bare-null shape the `request` guard below deals with.
 latest_copilot_ts() {
   gh api "repos/$OWNER/$REPO/pulls/$PR/reviews" --paginate --jq \
-    ".[] | select(.user.login==\"$BOT_REVIEW_LOGIN\" or .user.login==\"$BOT_DISPLAY_LOGIN\") | .submitted_at" \
+    ".[] | select(.user.login==\"$BOT_REVIEW_LOGIN\" or .user.login==\"$BOT_DISPLAY_LOGIN\") | .submitted_at // empty" \
     | sort | tail -n 1
 }
 
