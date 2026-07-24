@@ -125,7 +125,6 @@ struct ContentView: View {
     private func boosterToggle(_ title: String, icon: String,
                                isOn: Binding<Bool>, locked: Bool = false) -> some View {
         Button {
-            guard !locked else { return }
             isOn.wrappedValue.toggle()
         } label: {
             VStack(spacing: 6) {
@@ -143,7 +142,12 @@ struct ContentView: View {
             .foregroundStyle(isOn.wrappedValue ? Color.orange : Color.secondary)
         }
         .buttonStyle(.plain)
+        // CPU load is always on while warming, so its chip is a status
+        // indicator rather than a control: disabling it stops the tap
+        // highlight and makes VoiceOver announce it as unavailable.
+        .disabled(locked)
         .opacity(locked ? 0.9 : 1)
+        .accessibilityLabel(locked ? "\(title) booster, always on" : "\(title) booster")
     }
 
     private var statusFooter: some View {

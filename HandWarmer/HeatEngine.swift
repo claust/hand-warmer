@@ -155,14 +155,22 @@ final class HeatEngine: NSObject, ObservableObject {
 
     private func setTorch(on: Bool) {
         guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else { return }
+        // Only unlock if the lock was actually acquired, and unlock on every
+        // exit path — leaving the device locked would break later torch and
+        // camera use for the rest of the process.
         do {
             try device.lockForConfiguration()
+        } catch {
+            return
+        }
+        defer { device.unlockForConfiguration() }
+
+        do {
             if on {
                 try device.setTorchModeOn(level: 1.0)
             } else {
                 device.torchMode = .off
             }
-            device.unlockForConfiguration()
         } catch {
             // Torch is best-effort; ignore failures (e.g. camera in use).
         }
