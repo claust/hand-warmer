@@ -148,6 +148,8 @@ struct ContentView: View {
         .disabled(locked)
         .opacity(locked ? 0.9 : 1)
         .accessibilityLabel(locked ? "\(title) booster, always on" : "\(title) booster")
+        .accessibilityValue(isOn.wrappedValue ? "On" : "Off")
+        .accessibilityAddTraits(isOn.wrappedValue ? .isSelected : [])
     }
 
     private var statusFooter: some View {
