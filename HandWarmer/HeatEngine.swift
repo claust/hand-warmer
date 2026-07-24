@@ -60,6 +60,15 @@ final class HeatEngine: NSObject, ObservableObject {
             name: ProcessInfo.thermalStateDidChangeNotification, object: nil)
     }
 
+    deinit {
+        // The worker threads hold the flag, not self, so nothing else would
+        // ever stop them if this engine went away mid-session — they would
+        // spin for the lifetime of the process.
+        stopFlag.set(true)
+        setTorch(on: false)
+        NotificationCenter.default.removeObserver(self)
+    }
+
     var lowBattery: Bool {
         batteryLevel >= 0 && batteryLevel < 0.2 && batteryState != .charging && batteryState != .full
     }

@@ -26,6 +26,9 @@ targets:
           UIColorName: ""
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+        NSCameraUsageDescription: >-
+          Hand Warmer switches on the camera's torch LED, which warms the
+          device. It never captures photo or video.
         NSBluetoothAlwaysUsageDescription: >-
           Hand Warmer scans for nearby Bluetooth devices to keep the radio busy,
           which helps warm up the device.
