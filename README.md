@@ -49,7 +49,7 @@ battery.
 If you are not the owner of this repo, change `bundleIdPrefix` in
 `project.yml` to something under your own team before running `xcodegen
 generate`. Automatic signing has to register the App ID under your team, and
-`com.claus.HandWarmer` already belongs to someone else's.
+`com.claus.HandWarmer` already belongs to someone else.
 
 Launch with the `-autostart` argument to start the warmer automatically
 (used for automated UI verification).
