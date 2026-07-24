@@ -46,6 +46,11 @@ works in the simulator, but actual heating (and battery/thermal readouts)
 requires a real device — the simulator borrows your Mac's CPU and reports no
 battery.
 
+If you are not the owner of this repo, change `bundleIdPrefix` in
+`project.yml` to something under your own team before running `xcodegen
+generate`. Automatic signing has to register the App ID under your team, and
+`com.claus.HandWarmer` already belongs to someone else's.
+
 Launch with the `-autostart` argument to start the warmer automatically
 (used for automated UI verification).
 

@@ -77,6 +77,16 @@ final class HeatEngine: NSObject, ObservableObject {
 
     func start() {
         guard !isRunning else { return }
+
+        // thermalStateDidChange only fires on transitions, so a device that is
+        // already critical would sail past the safety valve and never trip it.
+        // Check the live state before spinning anything up.
+        thermalState = ProcessInfo.processInfo.thermalState
+        guard thermalState != .critical else {
+            criticalShutdown = true
+            return
+        }
+
         isRunning = true
         criticalShutdown = false
         sessionSeconds = 0

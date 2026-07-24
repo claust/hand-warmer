@@ -28,7 +28,7 @@ struct ContentView: View {
         .alert("Too hot!", isPresented: $engine.criticalShutdown) {
             Button("OK") {}
         } message: {
-            Text("iOS reported a critical thermal state, so the warmer switched itself off. Let the phone cool down for a bit.")
+            Text("iOS is reporting a critical thermal state, so the warmer is not running. Let the phone cool down for a bit before warming again.")
         }
         .onChange(of: engine.isRunning) { _, running in
             withAnimation(.easeInOut(duration: running ? 2.2 : 0.8)) {
