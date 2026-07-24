@@ -1,0 +1,98 @@
+name: iOS CI
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+# macOS runner minutes bill at 10x the Linux rate, so don't let superseded runs
+# stack up: a new push to a branch cancels the run still in flight for it.
+concurrency:
+  group: ios-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build, test & lint
+    # macos-15 carries an Xcode 26 toolchain, which the "Select Xcode" step
+    # below pins to an exact 26.x rather than a hard-coded /Applications path.
+    runs-on: macos-15
+    env:
+      SCHEME: HandWarmer
+      # Concrete simulator so `xcodebuild test` has a bootable destination.
+      # OS=latest takes whichever iOS runtime the selected Xcode ships.
+      DESTINATION: 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest'
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select Xcode 26
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '~> 26.0'
+
+      - name: Show toolchain versions
+        run: |
+          xcodebuild -version
+          xcrun simctl list runtimes | grep iOS || true
+
+      # xcbeautify prettifies the xcodebuild output in the Build/Test steps;
+      # install it explicitly rather than relying on it being preinstalled.
+      - name: Install tooling (XcodeGen + SwiftLint + xcbeautify)
+        run: brew install xcodegen swiftlint xcbeautify
+
+      # HandWarmer.xcodeproj is committed, but project.yml is the source of
+      # truth — regenerate so a stale checked-in project can't mask a mistake.
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      # --strict promotes every warning to an error, so a lint violation blocks
+      # the merge instead of merely surfacing in the log.
+      - name: SwiftLint
+        run: swiftlint lint --quiet --strict
+
+      # swift-format (bundled with the selected Xcode) owns layout; enforce it
+      # here so unformatted code can't merge. Mirrors `make format-ios`.
+      - name: swift-format lint
+        run: xcrun swift-format lint --strict --recursive HandWarmer HandWarmerTests
+
+      # Simulator builds need no signing and no secrets, hence
+      # CODE_SIGNING_ALLOWED=NO. Split build/test so a compile failure is
+      # reported as one and a test failure as the other.
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing \
+            -project HandWarmer.xcodeproj \
+            -scheme "$SCHEME" \
+            -destination "$DESTINATION" \
+            -derivedDataPath .build \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcbeautify
+
+      - name: Test
+        run: |
+          set -o pipefail
+          xcodebuild test-without-building \
+            -project HandWarmer.xcodeproj \
+            -scheme "$SCHEME" \
+            -destination "$DESTINATION" \
+            -derivedDataPath .build \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcbeautify
+
+      # Only on failure: a green run's result bundle is noise, a red one is the
+      # only way to see which assertion blew up without re-running locally.
+      - name: Upload test results
+        uses: actions/upload-artifact@v7
+        if: ${{ failure() }}
+        with:
+          name: xcresult
+          path: .build/Logs/Test/*.xcresult
+          retention-days: 7
+          if-no-files-found: ignore

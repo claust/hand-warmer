@@ -144,7 +144,7 @@ final class HeatEngine: NSObject, ObservableObject {
                 x = (x * 1.0000001).truncatingRemainder(dividingBy: 1e12) + 1.0001
                 i = i &* 2862933555777941757 &+ 3037000493
             }
-            if i == 0 { x += 1 } // keep the optimizer from deleting the loop
+            if i == 0 { x += 1 }  // keep the optimizer from deleting the loop
         }
     }
 
@@ -190,8 +190,9 @@ final class HeatEngine: NSObject, ObservableObject {
     private func startScanIfPoweredOn() {
         guard let cm = centralManager, cm.state == .poweredOn, !cm.isScanning else { return }
         // Allowing duplicates keeps the radio continuously busy.
-        cm.scanForPeripherals(withServices: nil,
-                              options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
+        cm.scanForPeripherals(
+            withServices: nil,
+            options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
     }
 
     private func setTorch(on: Bool) {

@@ -23,12 +23,18 @@ struct ContentView: View {
             Button("Warm me anyway", role: .destructive) { activate() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Battery is below 20%. The hand warmer drains power very quickly — your phone may shut down completely while it runs.")
+            Text(
+                "Battery is below 20%. The hand warmer drains power very quickly — "
+                    + "your phone may shut down completely while it runs."
+            )
         }
         .alert("Too hot!", isPresented: $engine.criticalShutdown) {
             Button("OK") {}
         } message: {
-            Text("iOS is reporting a critical thermal state, so the warmer is not running. Let the phone cool down for a bit before warming again.")
+            Text(
+                "iOS is reporting a critical thermal state, so the warmer is not running. "
+                    + "Let the phone cool down for a bit before warming again."
+            )
         }
         .onChange(of: engine.isRunning) { _, running in
             withAnimation(.easeInOut(duration: running ? 2.2 : 0.8)) {
@@ -50,7 +56,8 @@ struct ContentView: View {
             colors: engine.isRunning
                 ? [Color(red: 0.14, green: 0.04, blue: 0.01), .black]
                 : [Color(red: 0.05, green: 0.07, blue: 0.12), .black],
-            startPoint: .top, endPoint: .bottom)
+            startPoint: .top, endPoint: .bottom
+        )
         .ignoresSafeArea()
         .animation(.easeInOut(duration: 2), value: engine.isRunning)
     }
@@ -96,8 +103,12 @@ struct ContentView: View {
                             RadialGradient(
                                 colors: engine.isRunning
                                     ? [Color.orange, Color(red: 0.75, green: 0.15, blue: 0.0)]
-                                    : [Color(red: 0.25, green: 0.3, blue: 0.4), Color(red: 0.1, green: 0.12, blue: 0.18)],
-                                center: .center, startRadius: 8, endRadius: 90))
+                                    : [
+                                        Color(red: 0.25, green: 0.3, blue: 0.4),
+                                        Color(red: 0.1, green: 0.12, blue: 0.18),
+                                    ],
+                                center: .center, startRadius: 8, endRadius: 90)
+                        )
                         .frame(width: 150, height: 150)
                         .shadow(color: engine.isRunning ? .orange.opacity(0.7) : .clear, radius: 35)
                     VStack(spacing: 6) {
@@ -124,8 +135,10 @@ struct ContentView: View {
         }
     }
 
-    private func boosterToggle(_ title: String, icon: String,
-                               isOn: Binding<Bool>, locked: Bool = false) -> some View {
+    private func boosterToggle(
+        _ title: String, icon: String,
+        isOn: Binding<Bool>, locked: Bool = false
+    ) -> some View {
         Button {
             isOn.wrappedValue.toggle()
         } label: {
@@ -137,10 +150,12 @@ struct ContentView: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(isOn.wrappedValue ? Color.orange.opacity(0.25) : Color.white.opacity(0.06)))
+                    .fill(isOn.wrappedValue ? Color.orange.opacity(0.25) : Color.white.opacity(0.06))
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(isOn.wrappedValue ? Color.orange : Color.white.opacity(0.15)))
+                    .strokeBorder(isOn.wrappedValue ? Color.orange : Color.white.opacity(0.15))
+            )
             .foregroundStyle(isOn.wrappedValue ? Color.orange : Color.secondary)
         }
         .buttonStyle(.plain)
@@ -184,7 +199,8 @@ struct ContentView: View {
     }
 
     private var formattedTime: String {
-        let m = engine.sessionSeconds / 60, s = engine.sessionSeconds % 60
+        let m = engine.sessionSeconds / 60
+        let s = engine.sessionSeconds % 60
         return String(format: "%d:%02d", m, s)
     }
 
@@ -213,7 +229,8 @@ struct ContentView: View {
     private var batteryLevel: Float {
         let args = ProcessInfo.processInfo.arguments
         if let i = args.firstIndex(of: "-battery"), i + 1 < args.count,
-           let override = Float(args[i + 1]) {
+            let override = Float(args[i + 1])
+        {
             // A negative value still means "unknown", matching
             // UIDevice.batteryLevel, but nothing above full is a real reading.
             return min(override, 1)

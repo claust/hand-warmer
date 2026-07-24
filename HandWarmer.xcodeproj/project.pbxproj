@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		060231A0E1AD8600EB207F4A /* HeatEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27411F0C4E94D029B8938B44 /* HeatEngineTests.swift */; };
 		17C292E812E055659013331C /* HandWarmerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 843435006CE46C3C1E612E6A /* HandWarmerApp.swift */; };
 		8AAB98D911C7727B385B11A9 /* HeatEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DB451119EAD100546BC42F5 /* HeatEngine.swift */; };
 		CB0078877680FE19F0E73D81 /* FlameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E24262ACB312E96FABB47794 /* FlameView.swift */; };
@@ -15,12 +16,24 @@
 		F2FB8F21C86FF0AFEDE02EEE /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEBB35BCC4C0589E20CC3286 /* ContentView.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		04F62F3BA2502E0646B97B89 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3051DFA465ACA076690D7AB2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 643AE5BCE225B9D3CACA165B;
+			remoteInfo = HandWarmer;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		0601F7AF6550BB6145A8C387 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		0DB451119EAD100546BC42F5 /* HeatEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeatEngine.swift; sourceTree = "<group>"; };
+		27411F0C4E94D029B8938B44 /* HeatEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeatEngineTests.swift; sourceTree = "<group>"; };
 		50D369EDC920F32D26AE387A /* MeterBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeterBar.swift; sourceTree = "<group>"; };
 		658DDDE5F885CABFD917B218 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		843435006CE46C3C1E612E6A /* HandWarmerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandWarmerApp.swift; sourceTree = "<group>"; };
+		C3C3EA6AF4BDE3B898FA5284 /* HandWarmerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = HandWarmerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DEBB35BCC4C0589E20CC3286 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E24262ACB312E96FABB47794 /* FlameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlameView.swift; sourceTree = "<group>"; };
 		F24E8DDD425F3B616FC032DA /* HandWarmer.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HandWarmer.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -31,6 +44,7 @@
 			isa = PBXGroup;
 			children = (
 				F717A4DA44BCAC3E01A25F01 /* HandWarmer */,
+				8E75B81AFCAA92A46F169933 /* HandWarmerTests */,
 				762D8B39048B0B0D7D55FE26 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -39,8 +53,17 @@
 			isa = PBXGroup;
 			children = (
 				F24E8DDD425F3B616FC032DA /* HandWarmer.app */,
+				C3C3EA6AF4BDE3B898FA5284 /* HandWarmerTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		8E75B81AFCAA92A46F169933 /* HandWarmerTests */ = {
+			isa = PBXGroup;
+			children = (
+				27411F0C4E94D029B8938B44 /* HeatEngineTests.swift */,
+			);
+			path = HandWarmerTests;
 			sourceTree = "<group>";
 		};
 		F717A4DA44BCAC3E01A25F01 /* HandWarmer */ = {
@@ -78,6 +101,24 @@
 			productReference = F24E8DDD425F3B616FC032DA /* HandWarmer.app */;
 			productType = "com.apple.product-type.application";
 		};
+		8793D4A98390CA7FCBC89DC0 /* HandWarmerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 979B7DE6110B9AAC8C939FB4 /* Build configuration list for PBXNativeTarget "HandWarmerTests" */;
+			buildPhases = (
+				F0914068B98ADF191663A5EB /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3901EC4C32AE36A41795A732 /* PBXTargetDependency */,
+			);
+			name = HandWarmerTests;
+			packageProductDependencies = (
+			);
+			productName = HandWarmerTests;
+			productReference = C3C3EA6AF4BDE3B898FA5284 /* HandWarmerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -107,6 +148,7 @@
 			projectRoot = "";
 			targets = (
 				643AE5BCE225B9D3CACA165B /* HandWarmer */,
+				8793D4A98390CA7FCBC89DC0 /* HandWarmerTests */,
 			);
 		};
 /* End PBXProject section */
@@ -135,9 +177,43 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F0914068B98ADF191663A5EB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				060231A0E1AD8600EB207F4A /* HeatEngineTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		3901EC4C32AE36A41795A732 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 643AE5BCE225B9D3CACA165B /* HandWarmer */;
+			targetProxy = 04F62F3BA2502E0646B97B89 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		2E145B1BCF6EF70778463772 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.claus.HandWarmerTests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HandWarmer.app/HandWarmer";
+			};
+			name = Debug;
+		};
 		615961B07A3A7F3E18322860 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -236,6 +312,24 @@
 			};
 			name = Debug;
 		};
+		BB56551865F23B424C709165 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.claus.HandWarmerTests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HandWarmer.app/HandWarmer";
+			};
+			name = Release;
+		};
 		FDD27E390644BF0A817B3114 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -307,6 +401,15 @@
 			buildConfigurations = (
 				B6C3E31D1DF949640EF88DA7 /* Debug */,
 				B5933F7A763B9F10944E5C4B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		979B7DE6110B9AAC8C939FB4 /* Build configuration list for PBXNativeTarget "HandWarmerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2E145B1BCF6EF70778463772 /* Debug */,
+				BB56551865F23B424C709165 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
