@@ -1,0 +1,34 @@
+name: HandWarmer
+options:
+  bundleIdPrefix: com.claus
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+targets:
+  HandWarmer:
+    type: application
+    platform: iOS
+    sources:
+      - HandWarmer
+    settings:
+      base:
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
+        TARGETED_DEVICE_FAMILY: "1"
+        INFOPLIST_KEY_UIUserInterfaceStyle: Dark
+        CODE_SIGN_STYLE: Automatic
+    info:
+      path: HandWarmer/Info.plist
+      properties:
+        CFBundleDisplayName: Hand Warmer
+        UILaunchScreen:
+          UIColorName: ""
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSBluetoothAlwaysUsageDescription: >-
+          Hand Warmer scans for nearby Bluetooth devices to keep the radio busy,
+          which helps warm up the device.
+        NSLocationWhenInUseUsageDescription: >-
+          Hand Warmer uses high-accuracy GPS to keep the location chip busy,
+          which helps warm up the device.

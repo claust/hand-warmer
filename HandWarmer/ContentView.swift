@@ -1,0 +1,221 @@
+import SwiftUI
+
+struct ContentView: View {
+    @EnvironmentObject private var engine: HeatEngine
+    @State private var flameIntensity: CGFloat = 0
+    @State private var showLowBatteryWarning = false
+
+    var body: some View {
+        ZStack {
+            background
+
+            VStack(spacing: 24) {
+                header
+                Spacer()
+                flameAndButton
+                Spacer()
+                boosterBar
+                statusFooter
+            }
+            .padding()
+        }
+        .alert("Low battery", isPresented: $showLowBatteryWarning) {
+            Button("Warm me anyway", role: .destructive) { activate() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Battery is below 20%. The hand warmer drains power very quickly — your phone may shut down completely while it runs.")
+        }
+        .alert("Too hot!", isPresented: $engine.criticalShutdown) {
+            Button("OK") {}
+        } message: {
+            Text("iOS reported a critical thermal state, so the warmer switched itself off. Let the phone cool down for a bit.")
+        }
+        .onChange(of: engine.isRunning) { _, running in
+            withAnimation(.easeInOut(duration: running ? 2.2 : 0.8)) {
+                flameIntensity = running ? 1 : 0
+            }
+        }
+        .onAppear {
+            // Debug hook so automated runs can exercise the active state.
+            if ProcessInfo.processInfo.arguments.contains("-autostart") {
+                toggle()
+            }
+        }
+    }
+
+    // MARK: - Pieces
+
+    private var background: some View {
+        LinearGradient(
+            colors: engine.isRunning
+                ? [Color(red: 0.14, green: 0.04, blue: 0.01), .black]
+                : [Color(red: 0.05, green: 0.07, blue: 0.12), .black],
+            startPoint: .top, endPoint: .bottom)
+        .ignoresSafeArea()
+        .animation(.easeInOut(duration: 2), value: engine.isRunning)
+    }
+
+    private var header: some View {
+        VStack(spacing: 10) {
+            Text("Hand Warmer")
+                .font(.system(.largeTitle, design: .rounded).weight(.bold))
+            HStack(spacing: 14) {
+                thermalBadge
+                batteryBadge
+            }
+        }
+    }
+
+    private var thermalBadge: some View {
+        Label(thermalText, systemImage: "thermometer.medium")
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(thermalColor)
+            .padding(.horizontal, 12).padding(.vertical, 6)
+            .background(.ultraThinMaterial, in: Capsule())
+    }
+
+    private var batteryBadge: some View {
+        Label(batteryText, systemImage: batteryIcon)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(engine.lowBattery ? .red : .green)
+            .padding(.horizontal, 12).padding(.vertical, 6)
+            .background(.ultraThinMaterial, in: Capsule())
+    }
+
+    private var flameAndButton: some View {
+        VStack(spacing: 0) {
+            FlameView(intensity: flameIntensity)
+                .frame(width: 220, height: 240)
+
+            Button(action: toggle) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: engine.isRunning
+                                    ? [Color.orange, Color(red: 0.75, green: 0.15, blue: 0.0)]
+                                    : [Color(red: 0.25, green: 0.3, blue: 0.4), Color(red: 0.1, green: 0.12, blue: 0.18)],
+                                center: .center, startRadius: 8, endRadius: 90))
+                        .frame(width: 150, height: 150)
+                        .shadow(color: engine.isRunning ? .orange.opacity(0.7) : .clear, radius: 35)
+                    VStack(spacing: 6) {
+                        Image(systemName: engine.isRunning ? "flame.fill" : "flame")
+                            .font(.system(size: 44))
+                        Text(engine.isRunning ? "STOP" : "WARM ME")
+                            .font(.caption.weight(.heavy))
+                            .tracking(2)
+                    }
+                    .foregroundStyle(.white)
+                }
+            }
+            .buttonStyle(.plain)
+            .sensoryFeedback(.impact(weight: .heavy), trigger: engine.isRunning)
+        }
+    }
+
+    private var boosterBar: some View {
+        HStack(spacing: 12) {
+            boosterToggle("CPU", icon: "cpu", isOn: .constant(true), locked: true)
+            boosterToggle("GPS", icon: "location.fill", isOn: $engine.gpsBoost)
+            boosterToggle("Bluetooth", icon: "dot.radiowaves.left.and.right", isOn: $engine.bluetoothBoost)
+            boosterToggle("Torch", icon: "flashlight.on.fill", isOn: $engine.torchBoost)
+        }
+    }
+
+    private func boosterToggle(_ title: String, icon: String,
+                               isOn: Binding<Bool>, locked: Bool = false) -> some View {
+        Button {
+            guard !locked else { return }
+            isOn.wrappedValue.toggle()
+        } label: {
+            VStack(spacing: 6) {
+                Image(systemName: icon).font(.title3)
+                Text(title).font(.caption2.weight(.semibold))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(isOn.wrappedValue ? Color.orange.opacity(0.25) : Color.white.opacity(0.06)))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(isOn.wrappedValue ? Color.orange : Color.white.opacity(0.15)))
+            .foregroundStyle(isOn.wrappedValue ? Color.orange : Color.secondary)
+        }
+        .buttonStyle(.plain)
+        .opacity(locked ? 0.9 : 1)
+    }
+
+    private var statusFooter: some View {
+        Group {
+            if engine.isRunning {
+                Text("Warming on all \(engine.coreCount) cores · \(formattedTime)")
+            } else {
+                Text("Screen stays on while the app is open")
+            }
+        }
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+        .padding(.bottom, 4)
+    }
+
+    // MARK: - Actions & formatting
+
+    private func toggle() {
+        if engine.isRunning {
+            engine.stop()
+        } else if engine.lowBattery {
+            showLowBatteryWarning = true
+        } else {
+            activate()
+        }
+    }
+
+    private func activate() {
+        engine.start()
+    }
+
+    private var formattedTime: String {
+        let m = engine.sessionSeconds / 60, s = engine.sessionSeconds % 60
+        return String(format: "%d:%02d", m, s)
+    }
+
+    private var thermalText: String {
+        switch engine.thermalState {
+        case .nominal: return "Cool"
+        case .fair: return "Warm"
+        case .serious: return "Hot"
+        case .critical: return "Very hot"
+        @unknown default: return "Unknown"
+        }
+    }
+
+    private var thermalColor: Color {
+        switch engine.thermalState {
+        case .nominal: return .cyan
+        case .fair: return .yellow
+        case .serious: return .orange
+        case .critical: return .red
+        @unknown default: return .gray
+        }
+    }
+
+    private var batteryText: String {
+        engine.batteryLevel < 0 ? "– %" : "\(Int(engine.batteryLevel * 100)) %"
+    }
+
+    private var batteryIcon: String {
+        if engine.batteryState == .charging { return "battery.100percent.bolt" }
+        guard engine.batteryLevel >= 0 else { return "battery.50percent" }
+        switch engine.batteryLevel {
+        case ..<0.25: return "battery.25percent"
+        case ..<0.55: return "battery.50percent"
+        case ..<0.85: return "battery.75percent"
+        default: return "battery.100percent"
+        }
+    }
+}
+
+#Preview {
+    ContentView().environmentObject(HeatEngine())
+}
