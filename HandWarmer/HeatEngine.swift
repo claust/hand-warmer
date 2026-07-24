@@ -17,6 +17,13 @@ final class HeatEngine: NSObject, ObservableObject {
     @Published private(set) var thermalState: ProcessInfo.ThermalState = .nominal
     @Published var criticalShutdown = false
 
+    /// Continuous 0...1 stand-in for temperature, for the heat meter.
+    /// `thermalState` only has four steps and changes minutes apart, so the
+    /// raw value would make the bar sit still and then jump. Instead each
+    /// state owns a band of the bar and we creep through that band while
+    /// warming, so the meter always moves and never contradicts the label.
+    @Published private(set) var heatLevel: Double = 0
+
     // Boosters (CPU load is always on while running).
     @Published var gpsBoost = false { didSet { syncBoosters() } }
     @Published var bluetoothBoost = false { didSet { syncBoosters() } }
@@ -40,6 +47,8 @@ final class HeatEngine: NSObject, ObservableObject {
 
     private var stopFlag = Flag()
     private var timer: AnyCancellable?
+    private var heatTimer: AnyCancellable?
+    private var bandEntered = Date()
     private var centralManager: CBCentralManager?
     private var locationManager: CLLocationManager?
 
@@ -48,6 +57,13 @@ final class HeatEngine: NSObject, ObservableObject {
         UIDevice.current.isBatteryMonitoringEnabled = true
         refreshBattery()
         thermalState = ProcessInfo.processInfo.thermalState
+        heatLevel = Self.band(for: thermalState).lowerBound
+
+        // Runs whether or not the warmer is on: the bar also has to ease back
+        // down while the phone cools off.
+        heatTimer = Timer.publish(every: 1, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in self?.stepHeatLevel() }
 
         NotificationCenter.default.addObserver(
             self, selector: #selector(refreshBattery),
@@ -90,6 +106,7 @@ final class HeatEngine: NSObject, ObservableObject {
         isRunning = true
         criticalShutdown = false
         sessionSeconds = 0
+        bandEntered = Date()
 
         stopFlag = Flag()
         let flag = stopFlag
@@ -200,6 +217,38 @@ final class HeatEngine: NSObject, ObservableObject {
         }
     }
 
+    // MARK: - Heat meter
+
+    /// Slice of the meter owned by each thermal state.
+    static func band(for state: ProcessInfo.ThermalState) -> ClosedRange<Double> {
+        switch state {
+        case .nominal: return 0.00...0.30
+        case .fair: return 0.30...0.60
+        case .serious: return 0.60...0.85
+        case .critical: return 0.85...1.00
+        @unknown default: return 0.00...0.30
+        }
+    }
+
+    /// Seconds of warming it takes to cross one band. Chosen so the bar is
+    /// visibly moving from the first second without racing ahead of reality.
+    private static let bandCrossing: TimeInterval = 150
+
+    private func stepHeatLevel() {
+        let band = Self.band(for: thermalState)
+        let target: Double
+        if isRunning {
+            let progress = min(1, Date().timeIntervalSince(bandEntered) / Self.bandCrossing)
+            target = band.lowerBound + (band.upperBound - band.lowerBound) * progress
+        } else {
+            target = band.lowerBound
+        }
+        // Exponential ease, so a band change glides instead of snapping.
+        let rate = isRunning ? 0.3 : 0.06
+        let next = heatLevel + (target - heatLevel) * rate
+        if abs(next - heatLevel) > 0.0005 { heatLevel = next }
+    }
+
     // MARK: - Telemetry
 
     @objc private func refreshBattery() {
@@ -211,7 +260,9 @@ final class HeatEngine: NSObject, ObservableObject {
 
     @objc private func thermalChanged() {
         DispatchQueue.main.async {
-            self.thermalState = ProcessInfo.processInfo.thermalState
+            let new = ProcessInfo.processInfo.thermalState
+            if new != self.thermalState { self.bandEntered = Date() }
+            self.thermalState = new
             // Safety valve: if iOS reports critical heat, shut down rather
             // than fight the system's own throttling.
             if self.thermalState == .critical, self.isRunning {
