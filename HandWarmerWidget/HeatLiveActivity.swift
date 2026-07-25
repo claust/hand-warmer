@@ -79,10 +79,16 @@ struct HeatLiveActivity: Widget {
                 elapsed(from: context.state.startedAt)
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.orange)
+                    .lineLimit(1)
+                    // Past an hour the clock gains an hours component and no
+                    // longer fits; shrink rather than clip, so a long session
+                    // stays readable.
+                    .minimumScaleFactor(0.6)
+                    .multilineTextAlignment(.trailing)
                     // The compact area sizes itself to its content, and a
                     // timer's width changes as the digits do; pin it so the
                     // island doesn't twitch every time the minute rolls over.
-                    .frame(width: 42)
+                    .frame(width: 46, alignment: .trailing)
             } minimal: {
                 LiveFlame(
                     phase: context.state.flamePhase,
