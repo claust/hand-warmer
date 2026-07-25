@@ -159,7 +159,7 @@ struct ContentView: View {
             if engine.isRunning {
                 Text("Warming on all \(engine.coreCount) cores · \(formattedTime)")
             } else {
-                Text("Keeps warming in your pocket — watch the Dynamic Island")
+                Text("Once started, it keeps warming in your pocket")
             }
         }
         .font(.footnote)
