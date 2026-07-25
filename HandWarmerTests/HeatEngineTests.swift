@@ -104,6 +104,36 @@ final class HeatEngineTests: XCTestCase {
         XCTAssertFalse(HeatEngine.atBatteryFloor(level: -1, state: .unknown))
     }
 
+    // MARK: - GPU booster
+
+    /// The loop only stays glued to its GPU-time target if the correction
+    /// points the right way: too slow means fewer rounds, too fast means more.
+    func testRoundsFollowTheGPUTimeTarget() {
+        let rounds = 4096
+        XCTAssertLessThan(GPUBurner.nextRounds(current: rounds, gpuTime: 0.100), rounds)
+        XCTAssertGreaterThan(GPUBurner.nextRounds(current: rounds, gpuTime: 0.001), rounds)
+    }
+
+    /// One stalled command buffer must not collapse the loop to nothing, and
+    /// one suspiciously quick one must not launch a dispatch long enough to
+    /// look like a hung shader. Hence the per-step cap.
+    func testRoundsMoveByAtMostOneStepInEitherDirection() {
+        let rounds = 4096
+        XCTAssertEqual(GPUBurner.nextRounds(current: rounds, gpuTime: 10), rounds / 4)
+        XCTAssertEqual(GPUBurner.nextRounds(current: rounds, gpuTime: 0.000_001), rounds * 4)
+    }
+
+    /// A buffer that completes below the clock's resolution reports zero, which
+    /// would divide by ~nothing; it has to mean "much more work" instead.
+    func testUnmeasurablyFastBufferStepsUp() {
+        XCTAssertEqual(GPUBurner.nextRounds(current: 4096, gpuTime: 0), 4096 * 4)
+    }
+
+    func testRoundsStayWithinBounds() {
+        XCTAssertEqual(GPUBurner.nextRounds(current: GPUBurner.minRounds, gpuTime: 10), GPUBurner.minRounds)
+        XCTAssertEqual(GPUBurner.nextRounds(current: GPUBurner.maxRounds, gpuTime: 0), GPUBurner.maxRounds)
+    }
+
     // MARK: - Lifecycle
 
     // The engine drives the Live Activity controller, which is main-actor

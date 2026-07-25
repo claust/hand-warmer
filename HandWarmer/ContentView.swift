@@ -4,6 +4,7 @@ struct ContentView: View {
     @EnvironmentObject private var engine: HeatEngine
     @State private var flameIntensity: CGFloat = 0
     @State private var showLowBatteryWarning = false
+    @State private var showBoosters = false
 
     var body: some View {
         ZStack {
@@ -14,10 +15,14 @@ struct ContentView: View {
                 Spacer()
                 flameAndButton
                 Spacer()
-                boosterBar
-                statusFooter
+                boosterButton
             }
             .padding()
+
+            if showBoosters {
+                BoosterPanel(isPresented: $showBoosters, batteryCutoff: batteryCutoff)
+                    .transition(.opacity.combined(with: .scale(scale: 0.94)))
+            }
         }
         .alert("Low battery", isPresented: $showLowBatteryWarning) {
             Button("Warm me anyway", role: .destructive) { activate() }
@@ -53,7 +58,11 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            // Debug hook so automated runs can exercise the active state.
+            // Debug hooks so automated runs can exercise the active state.
+            // `-boosters gpu,neural` switches boosters on before the session
+            // starts, which is the only way to reach them on a device the
+            // test harness cannot tap.
+            applyBoosterOverrides()
             if ProcessInfo.processInfo.arguments.contains("-autostart") {
                 toggle()
             }
@@ -143,62 +152,44 @@ struct ContentView: View {
         }
     }
 
-    private var boosterBar: some View {
-        HStack(spacing: 12) {
-            boosterToggle("CPU", icon: "cpu", isOn: .constant(true), locked: true)
-            boosterToggle("GPS", icon: "location.fill", isOn: $engine.gpsBoost)
-            boosterToggle("Bluetooth", icon: "dot.radiowaves.left.and.right", isOn: $engine.bluetoothBoost)
-            boosterToggle("Torch", icon: "flashlight.on.fill", isOn: $engine.torchBoost)
-        }
-    }
-
-    private func boosterToggle(
-        _ title: String, icon: String,
-        isOn: Binding<Bool>, locked: Bool = false
-    ) -> some View {
+    /// The only thing left where the chip grid used to be. It carries the
+    /// count as well as the icon, so the state of the boosters is still
+    /// legible without opening anything.
+    private var boosterButton: some View {
         Button {
-            isOn.wrappedValue.toggle()
-        } label: {
-            VStack(spacing: 6) {
-                Image(systemName: icon).font(.title3)
-                Text(title).font(.caption2.weight(.semibold))
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                showBoosters = true
             }
-            .frame(maxWidth: .infinity)
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "info.circle")
+                Text(boosterSummary)
+            }
+            .font(.subheadline.weight(.semibold))
+            .padding(.horizontal, 18)
             .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(isOn.wrappedValue ? Color.orange.opacity(0.25) : Color.white.opacity(0.06))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(isOn.wrappedValue ? Color.orange : Color.white.opacity(0.15))
-            )
-            .foregroundStyle(isOn.wrappedValue ? Color.orange : Color.secondary)
+            .background(Capsule().fill(Color.white.opacity(0.08)))
+            .overlay(Capsule().strokeBorder(Color.white.opacity(0.15)))
+            .foregroundStyle(activeBoosters > 0 ? Color.orange : Color.secondary)
         }
         .buttonStyle(.plain)
-        // CPU load is always on while warming, so its chip is a status
-        // indicator rather than a control: disabling it stops the tap
-        // highlight and makes VoiceOver announce it as unavailable.
-        .disabled(locked)
-        .opacity(locked ? 0.9 : 1)
-        .accessibilityLabel(locked ? "\(title) booster, always on" : "\(title) booster")
-        .accessibilityValue(isOn.wrappedValue ? "On" : "Off")
-        .accessibilityAddTraits(isOn.wrappedValue ? .isSelected : [])
+        .accessibilityLabel("Boosters")
+        .accessibilityValue(boosterSummary)
+        .accessibilityHint("Opens the booster controls")
     }
 
-    private var statusFooter: some View {
-        Group {
-            if engine.isRunning {
-                Text("Warming on all \(engine.coreCount) cores · \(formattedTime)")
-            } else if batteryCutoff {
-                Text("Cold hands beat a dead phone. Find a charger.")
-            } else {
-                Text("Once started, it keeps warming in your pocket")
-            }
-        }
-        .font(.footnote)
-        .foregroundStyle(.secondary)
-        .padding(.bottom, 4)
+    /// CPU is excluded: it is always on, so counting it would make "1 on" the
+    /// resting state and mean nothing.
+    private var activeBoosters: Int {
+        [
+            engine.gpuBoost, engine.neuralBoost, engine.gpsBoost,
+            engine.bluetoothBoost, engine.torchBoost,
+        ]
+        .filter { $0 }.count
+    }
+
+    private var boosterSummary: String {
+        activeBoosters == 0 ? "Boosters · CPU only" : "Boosters · \(activeBoosters + 1) on"
     }
 
     // MARK: - Actions & formatting
@@ -237,10 +228,15 @@ struct ContentView: View {
         engine.start()
     }
 
-    private var formattedTime: String {
-        let m = engine.sessionSeconds / 60
-        let s = engine.sessionSeconds % 60
-        return String(format: "%d:%02d", m, s)
+    private func applyBoosterOverrides() {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-boosters"), i + 1 < args.count else { return }
+        let names = Set(args[i + 1].split(separator: ",").map(String.init))
+        engine.gpuBoost = names.contains("gpu")
+        engine.neuralBoost = names.contains("neural")
+        engine.gpsBoost = names.contains("gps")
+        engine.bluetoothBoost = names.contains("bluetooth")
+        engine.torchBoost = names.contains("torch")
     }
 
     private var thermalText: String { HeatEngine.label(for: engine.thermalState) }
