@@ -100,6 +100,10 @@ final class HeatActivityController {
                 // Activities can be off system-wide or refused under load. The
                 // warmer itself is unaffected, so carry on without the island.
                 self.activity = nil
+                // Release the guard as well, or the controller spends the rest
+                // of the session believing a request is outstanding and refuses
+                // every later attempt.
+                self.wantsActivity = false
             }
         }
     }

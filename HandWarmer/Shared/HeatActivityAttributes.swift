@@ -14,7 +14,8 @@ struct HeatActivityAttributes: ActivityAttributes {
 
         /// 0...1, same scale as `HeatEngine.heatLevel`.
         var heatLevel: Double
-        /// "Cool" / "Warm" / "Hot" / "Very hot".
+        /// "Cool" / "Warm" / "Hot" / "Very hot", or "Unknown" if iOS ever
+        /// reports a thermal state this build does not know about.
         var thermalLabel: String
         /// Raw `UIDevice.batteryLevel`; negative means "unknown".
         var batteryLevel: Float

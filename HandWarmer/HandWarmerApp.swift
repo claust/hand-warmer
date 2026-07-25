@@ -26,7 +26,12 @@ struct HandWarmerApp: App {
             // audio session to stay scheduled, and the session moves to the
             // Dynamic Island. Drive the island harder once it is what the user
             // is actually looking at.
-            engine.setBackgrounded(phase != .active)
+            //
+            // Keyed on .background rather than "not .active": .inactive covers
+            // Control Center, permission prompts and call banners, where the
+            // island is usually covered anyway, and the fast cadence is pure
+            // ActivityKit traffic for nobody's benefit.
+            engine.setBackgrounded(phase == .background)
         }
     }
 }
