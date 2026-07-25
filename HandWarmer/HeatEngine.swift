@@ -16,6 +16,7 @@ final class HeatEngine: NSObject, ObservableObject {
     @Published private(set) var batteryState: UIDevice.BatteryState = .unknown
     @Published private(set) var thermalState: ProcessInfo.ThermalState = .nominal
     @Published var criticalShutdown = false
+    @Published var batteryShutdown = false
 
     /// Continuous 0...1 stand-in for temperature, for the heat meter.
     /// `thermalState` only has four steps and changes minutes apart, so the
@@ -63,7 +64,11 @@ final class HeatEngine: NSObject, ObservableObject {
         // last snapshot on the way out.
         island.snapshot = { [weak self] in self?.activityState() }
         UIDevice.current.isBatteryMonitoringEnabled = true
-        refreshBattery()
+        // Seeded here rather than through `refreshBattery`, whose hop to main
+        // would leave the level at -1 for a runloop turn — long enough for a
+        // start on the first frame to sail past the battery floor.
+        batteryLevel = UIDevice.current.batteryLevel
+        batteryState = UIDevice.current.batteryState
         thermalState = ProcessInfo.processInfo.thermalState
         heatLevel = Self.band(for: thermalState).lowerBound
 
@@ -113,6 +118,17 @@ final class HeatEngine: NSObject, ObservableObject {
         batteryLevel >= 0 && batteryLevel < 0.2 && batteryState != .charging && batteryState != .full
     }
 
+    /// Refuse to run at or below this: a dead phone is worse than cold hands.
+    static let batteryFloor: Float = 0.10
+
+    /// Shared by the engine and the UI so the button and the auto-stop can never
+    /// disagree. The epsilon covers Float noise at 0.1 and nothing more.
+    static func atBatteryFloor(level: Float, state: UIDevice.BatteryState) -> Bool {
+        level >= 0 && level <= batteryFloor + 0.0001 && state != .charging && state != .full
+    }
+
+    var atBatteryFloor: Bool { Self.atBatteryFloor(level: batteryLevel, state: batteryState) }
+
     // MARK: - Control
 
     @MainActor
@@ -128,8 +144,15 @@ final class HeatEngine: NSObject, ObservableObject {
             return
         }
 
+        // The UI blocks this too, but the floor is the engine's to enforce.
+        guard !atBatteryFloor else {
+            batteryShutdown = true
+            return
+        }
+
         isRunning = true
         criticalShutdown = false
+        batteryShutdown = false
         sessionSeconds = 0
         bandEntered = Date()
         startedAt = Date()
@@ -221,7 +244,8 @@ final class HeatEngine: NSObject, ObservableObject {
         Self.setTorch(on: active && torchBoost)
     }
 
-    private func startScanIfPoweredOn() {
+    /// Not private: the Bluetooth delegate lives in HeatEngine+Radios.swift.
+    func startScanIfPoweredOn() {
         guard let cm = centralManager, cm.state == .poweredOn, !cm.isScanning else { return }
         // Allowing duplicates keeps the radio continuously busy.
         cm.scanForPeripherals(
@@ -256,17 +280,6 @@ final class HeatEngine: NSObject, ObservableObject {
 
     // MARK: - Heat meter
 
-    /// Slice of the meter owned by each thermal state.
-    static func band(for state: ProcessInfo.ThermalState) -> ClosedRange<Double> {
-        switch state {
-        case .nominal: return 0.00...0.30
-        case .fair: return 0.30...0.60
-        case .serious: return 0.60...0.85
-        case .critical: return 0.85...1.00
-        @unknown default: return 0.00...0.30
-        }
-    }
-
     /// Seconds of warming it takes to cross one band. Chosen so the bar is
     /// visibly moving from the first second without racing ahead of reality.
     private static let bandCrossing: TimeInterval = 150
@@ -287,18 +300,6 @@ final class HeatEngine: NSObject, ObservableObject {
     }
 
     // MARK: - Live Activity
-
-    /// Short label for a thermal state, shared by the main screen and the
-    /// Dynamic Island so the two readouts can never disagree.
-    static func label(for state: ProcessInfo.ThermalState) -> String {
-        switch state {
-        case .nominal: return "Cool"
-        case .fair: return "Warm"
-        case .serious: return "Hot"
-        case .critical: return "Very hot"
-        @unknown default: return "Unknown"
-        }
-    }
 
     /// Current readings for the island. `flamePhase` is filled in by the
     /// controller, which owns the animation clock.
@@ -322,9 +323,21 @@ final class HeatEngine: NSObject, ObservableObject {
     // MARK: - Telemetry
 
     @objc private func refreshBattery() {
+        // Battery notifications arrive on an arbitrary thread; hop to main the
+        // same way `thermalChanged` does, and for the same reasons.
         DispatchQueue.main.async {
-            self.batteryLevel = UIDevice.current.batteryLevel
-            self.batteryState = UIDevice.current.batteryState
+            MainActor.assumeIsolated {
+                self.batteryLevel = UIDevice.current.batteryLevel
+                self.batteryState = UIDevice.current.batteryState
+
+                // The other safety valve, alongside the thermal one: at the
+                // floor the session ends itself rather than taking the phone
+                // with it.
+                if self.atBatteryFloor, self.isRunning {
+                    self.stop()
+                    self.batteryShutdown = true
+                }
+            }
         }
     }
 
@@ -363,20 +376,5 @@ final class HeatEngine: NSObject, ObservableObject {
             stop()
             criticalShutdown = true
         }
-    }
-}
-
-extension HeatEngine: CBCentralManagerDelegate {
-    func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        // A late state update (Bluetooth switched back on, say) must not
-        // resurrect a scan the user has since turned off.
-        guard isRunning, bluetoothBoost else { return }
-        startScanIfPoweredOn()
-    }
-}
-
-extension HeatEngine: CLLocationManagerDelegate {
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        if isRunning && gpsBoost { manager.startUpdatingLocation() }
     }
 }
