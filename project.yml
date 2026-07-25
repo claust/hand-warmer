@@ -4,16 +4,27 @@ options:
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
+
+# Defined once, at project level, so the app and its embedded extension inherit
+# the same version rather than each carrying its own copy to bump. iOS refuses
+# to install a bundle whose extension declares a different version from its
+# host, so a half-remembered bump is an install failure, not a cosmetic slip.
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
 targets:
   HandWarmer:
     type: application
     platform: iOS
     sources:
       - HandWarmer
+    dependencies:
+      - target: HandWarmerWidget
+        embed: true
     settings:
       base:
-        MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1"
         INFOPLIST_KEY_UIUserInterfaceStyle: Dark
@@ -22,11 +33,28 @@ targets:
       path: HandWarmer/Info.plist
       properties:
         CFBundleDisplayName: Hand Warmer
+        # Substituted rather than literal, so the version lives in exactly one
+        # place — see the project-level settings above.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         # Present but empty: opts into the modern launch-screen system (and
         # full-size rendering on every device) using the default background.
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+        # Puts the running session in the Dynamic Island and on the Lock Screen.
+        NSSupportsLiveActivities: true
+        # The flame is animated by pushing a new state per frame, which is far
+        # more traffic than the delivery-tracking activities this API was built
+        # for. Declaring it is what keeps the system from throttling us back to
+        # the ordinary budget.
+        NSSupportsLiveActivitiesFrequentUpdates: true
+        # The warmer keeps running after the app leaves the screen, which iOS
+        # only permits under a background mode — a Live Activity buys
+        # visibility, not execution time. We hold an audio session playing
+        # silence; see BackgroundKeepAlive.
+        UIBackgroundModes:
+          - audio
         NSCameraUsageDescription: >-
           Hand Warmer switches on the camera's torch LED, which warms the
           device. It never captures photo or video.
@@ -36,6 +64,34 @@ targets:
         NSLocationWhenInUseUsageDescription: >-
           Hand Warmer uses high-accuracy GPS to keep the location chip busy,
           which helps warm up the device.
+
+  # Draws the Live Activity. It runs out of process, so everything it needs —
+  # the state contract, the flame shape, the meter — lives in HandWarmer/Shared
+  # and is compiled into both targets.
+  HandWarmerWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - HandWarmerWidget
+      - HandWarmer/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.claus.HandWarmer.Widget
+        SWIFT_VERSION: "5.9"
+        TARGETED_DEVICE_FAMILY: "1"
+        INFOPLIST_KEY_UIUserInterfaceStyle: Dark
+        CODE_SIGN_STYLE: Automatic
+        SKIP_INSTALL: YES
+    info:
+      path: HandWarmerWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Hand Warmer
+        # Same project-level version as the host app, by inheritance.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
   HandWarmerTests:
     type: bundle.unit-test
     platform: iOS

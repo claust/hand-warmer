@@ -17,15 +17,23 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Hand Warmer scans for nearby Bluetooth devices to keep the radio busy, which helps warm up the device.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Hand Warmer switches on the camera's torch LED, which warms the device. It never captures photo or video.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Hand Warmer uses high-accuracy GPS to keep the location chip busy, which helps warm up the device.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

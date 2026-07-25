@@ -40,8 +40,36 @@ final class HeatEngineTests: XCTestCase {
         XCTAssertEqual(boundaries, [0.30, 0.60, 0.85])
     }
 
+    // MARK: - Thermal labels
+
+    /// These strings are a cross-process contract, not cosmetics: they travel
+    /// to the widget inside `ContentState.thermalLabel`, and the Live Activity
+    /// picks its colour by matching them. A silent rename here would leave the
+    /// island rendering everything in the fallback grey.
+    func testLabelsMatchTheStringsTheWidgetMatchesOn() {
+        XCTAssertEqual(states.map(HeatEngine.label(for:)), ["Cool", "Warm", "Hot", "Very hot"])
+    }
+
+    func testEveryStateHasADistinctLabel() {
+        XCTAssertEqual(Set(states.map(HeatEngine.label(for:))).count, states.count)
+    }
+
+    /// A thermal state this build does not know about has to fall through the
+    /// `@unknown default` to "Unknown" rather than trapping.
+    func testUnknownStateFallsBackToUnknown() throws {
+        let future = try XCTUnwrap(
+            ProcessInfo.ThermalState(rawValue: 99),
+            "ThermalState rejects unknown raw values on this OS; nothing to check")
+        XCTAssertEqual(HeatEngine.label(for: future), "Unknown")
+    }
+
     // MARK: - Lifecycle
 
+    // The engine drives the Live Activity controller, which is main-actor
+    // isolated, so these have to run there too — the isolation is what makes
+    // that a compile error instead of an occasional flake.
+
+    @MainActor
     func testStartThenStopTogglesIsRunning() throws {
         let engine = HeatEngine()
         try XCTSkipIf(
@@ -55,6 +83,7 @@ final class HeatEngineTests: XCTestCase {
         XCTAssertFalse(engine.isRunning)
     }
 
+    @MainActor
     func testStopWithoutStartIsHarmless() {
         let engine = HeatEngine()
         engine.stop()
@@ -64,12 +93,14 @@ final class HeatEngineTests: XCTestCase {
 
     /// The initial heat level has to start inside the band for the current
     /// thermal state, otherwise the bar contradicts its own label on launch.
+    @MainActor
     func testInitialHeatLevelSitsInsideItsBand() {
         let engine = HeatEngine()
         let band = HeatEngine.band(for: engine.thermalState)
         XCTAssertTrue(band.contains(engine.heatLevel))
     }
 
+    @MainActor
     func testCoreCountIsPositive() {
         XCTAssertGreaterThan(HeatEngine().coreCount, 0)
     }
