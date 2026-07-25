@@ -9,6 +9,15 @@ import Foundation
 /// it redraws only when a new `ContentState` arrives. So the flame's animation
 /// is literally this class's tick — we push a new `flamePhase` a few times a
 /// second and let SwiftUI interpolate the shapes in between.
+///
+/// **Threading:** every entry point runs on the main thread, and all mutable
+/// state below is main-thread-only. That holds today because the callers are a
+/// SwiftUI scene phase, the engine's start/stop (driven by a tap), and a
+/// main-runloop timer, and because the request/update work is done from
+/// `@MainActor` tasks. It is an invariant rather than a guarantee the type
+/// system enforces — hence the assertions on the entry points. Making the class
+/// `@MainActor` is the real fix and is worth doing; it needs `HeatEngine`'s
+/// `deinit` untangled first, which cannot call main-actor-isolated members.
 final class HeatActivityController {
 
     /// Pulled on every tick for the current readings. Set by `HeatEngine`.
@@ -69,6 +78,7 @@ final class HeatActivityController {
     // stray flame lingers until the next time warming starts.
 
     func begin(coreCount: Int) {
+        MainActor.assertIsolated("HeatActivityController state is main-thread-only")
         // `wantsActivity`, not `activity`, is the guard: the request below is
         // async, so two begins in quick succession would both still see a nil
         // activity and each ask for one, leaving a duplicate flame behind.
@@ -120,6 +130,7 @@ final class HeatActivityController {
 
     /// Drives the tick rate: fast while the island is actually visible.
     func setBackgrounded(_ backgrounded: Bool) {
+        MainActor.assertIsolated("HeatActivityController state is main-thread-only")
         guard backgrounded != isBackgrounded else { return }
         isBackgrounded = backgrounded
         guard activity != nil else { return }

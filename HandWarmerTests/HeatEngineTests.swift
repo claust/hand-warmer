@@ -40,6 +40,29 @@ final class HeatEngineTests: XCTestCase {
         XCTAssertEqual(boundaries, [0.30, 0.60, 0.85])
     }
 
+    // MARK: - Thermal labels
+
+    /// These strings are a cross-process contract, not cosmetics: they travel
+    /// to the widget inside `ContentState.thermalLabel`, and the Live Activity
+    /// picks its colour by matching them. A silent rename here would leave the
+    /// island rendering everything in the fallback grey.
+    func testLabelsMatchTheStringsTheWidgetMatchesOn() {
+        XCTAssertEqual(states.map(HeatEngine.label(for:)), ["Cool", "Warm", "Hot", "Very hot"])
+    }
+
+    func testEveryStateHasADistinctLabel() {
+        XCTAssertEqual(Set(states.map(HeatEngine.label(for:))).count, states.count)
+    }
+
+    /// A thermal state this build does not know about has to fall through the
+    /// `@unknown default` to "Unknown" rather than trapping.
+    func testUnknownStateFallsBackToUnknown() throws {
+        let future = try XCTUnwrap(
+            ProcessInfo.ThermalState(rawValue: 99),
+            "ThermalState rejects unknown raw values on this OS; nothing to check")
+        XCTAssertEqual(HeatEngine.label(for: future), "Unknown")
+    }
+
     // MARK: - Lifecycle
 
     func testStartThenStopTogglesIsRunning() throws {
