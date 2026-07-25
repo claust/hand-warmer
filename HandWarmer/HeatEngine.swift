@@ -141,7 +141,7 @@ final class HeatEngine: NSObject, ObservableObject {
             return
         }
 
-        // The button is disabled at the floor, but -autostart calls this direct.
+        // The UI blocks this too, but the floor is the engine's to enforce.
         guard !atBatteryFloor else {
             batteryShutdown = true
             return
