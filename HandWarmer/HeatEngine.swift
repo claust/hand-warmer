@@ -118,10 +118,10 @@ final class HeatEngine: NSObject, ObservableObject {
     /// pocket is worse than cold hands.
     static let batteryFloor: Float = 0.10
 
-    /// Shared by the engine and the UI so the disabled button and the auto-stop
-    /// can never disagree. Levels arrive as 5% Float steps, hence the slack.
+    /// Shared by the engine and the UI so the button and the auto-stop can never
+    /// disagree. The epsilon covers Float noise at 0.1 and nothing more.
     static func atBatteryFloor(level: Float, state: UIDevice.BatteryState) -> Bool {
-        level >= 0 && level <= batteryFloor + 0.005 && state != .charging && state != .full
+        level >= 0 && level <= batteryFloor + 0.0001 && state != .charging && state != .full
     }
 
     var atBatteryFloor: Bool { Self.atBatteryFloor(level: batteryLevel, state: batteryState) }

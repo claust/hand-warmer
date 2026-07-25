@@ -82,6 +82,12 @@ final class HeatEngineTests: XCTestCase {
         }
     }
 
+    /// The tolerance is there for Float noise, not to move the floor: anything
+    /// a user would read as 11% still gets to warm.
+    func testFloorDoesNotCreepAboveTenPercent() {
+        XCTAssertFalse(HeatEngine.atBatteryFloor(level: 0.102, state: .unplugged))
+    }
+
     func testAboveTheFloorIsFine() {
         for level: Float in [0.15, 0.20, 1.0] {
             XCTAssertFalse(
