@@ -26,33 +26,23 @@ final class HeatEngine: NSObject, ObservableObject {
     @Published private(set) var heatLevel: Double = 0
 
     // Boosters (CPU load is always on while running).
+    @Published var gpuBoost = false { didSet { syncBoosters() } }
+    @Published var neuralBoost = false { didSet { syncBoosters() } }
     @Published var gpsBoost = false { didSet { syncBoosters() } }
     @Published var bluetoothBoost = false { didSet { syncBoosters() } }
     @Published var torchBoost = false { didSet { syncBoosters() } }
 
     let coreCount = ProcessInfo.processInfo.activeProcessorCount
 
-    /// Shared stop flag read by the worker threads. NSLock-guarded; workers
-    /// check it once per chunk of math so the lock cost is negligible.
-    private final class Flag {
-        private let lock = NSLock()
-        private var value = false
-        var isSet: Bool {
-            lock.lock(); defer { lock.unlock() }
-            return value
-        }
-        func set(_ v: Bool) {
-            lock.lock(); value = v; lock.unlock()
-        }
-    }
-
-    private var stopFlag = Flag()
+    private var stopFlag = StopFlag()
     private var timer: AnyCancellable?
     private var heatTimer: AnyCancellable?
     private var bandEntered = Date()
     private var startedAt = Date()
     private var centralManager: CBCentralManager?
     private var locationManager: CLLocationManager?
+    private let gpuBurner = GPUBurner()
+    private let neuralBurner = NeuralBurner()
     private let keepAlive = BackgroundKeepAlive()
     private let island = HeatActivityController()
 
@@ -94,6 +84,8 @@ final class HeatEngine: NSObject, ObservableObject {
         // ever stop them if this engine went away mid-session — they would
         // spin for the lifetime of the process.
         stopFlag.set(true)
+        // The GPU worker is stopped by the burner's own deinit, which runs as
+        // this property is released a moment from now.
         Self.setTorch(on: false)
         keepAlive.stop()
         NotificationCenter.default.removeObserver(self)
@@ -161,7 +153,7 @@ final class HeatEngine: NSObject, ObservableObject {
         // the time the user can plausibly swipe up out of the app.
         keepAlive.start()
 
-        stopFlag = Flag()
+        stopFlag = StopFlag()
         let flag = stopFlag
         for core in 0..<coreCount {
             let thread = Thread {
@@ -193,7 +185,7 @@ final class HeatEngine: NSObject, ObservableObject {
 
     /// Pure math busy loop. The work is meaningless on purpose — its only job
     /// is to keep the ALU and FPU of one core saturated until told to stop.
-    private static func burn(flag: Flag, seed: Int) {
+    private static func burn(flag: StopFlag, seed: Int) {
         var x = Double(seed + 2)
         var i: UInt64 = 0
         while !flag.isSet {
@@ -209,6 +201,18 @@ final class HeatEngine: NSObject, ObservableObject {
 
     private func syncBoosters() {
         let active = isRunning
+
+        if active && gpuBoost {
+            gpuBurner.start()
+        } else {
+            gpuBurner.stop()
+        }
+
+        if active && neuralBoost {
+            neuralBurner.start()
+        } else {
+            neuralBurner.stop()
+        }
 
         if active && bluetoothBoost {
             if centralManager == nil {
@@ -307,6 +311,8 @@ final class HeatEngine: NSObject, ObservableObject {
         // CPU is unconditional while warming, matching the locked chip in the
         // booster bar.
         var symbols = ["cpu"]
+        if gpuBoost { symbols.append("memorychip") }
+        if neuralBoost { symbols.append("brain") }
         if gpsBoost { symbols.append("location.fill") }
         if bluetoothBoost { symbols.append("dot.radiowaves.left.and.right") }
         if torchBoost { symbols.append("flashlight.on.fill") }

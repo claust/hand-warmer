@@ -11,11 +11,52 @@ as busy as possible:
 
 - **CPU** — one busy-loop math thread per core (always on while warming), the
   most effective way to generate heat.
+- **GPU booster** — a Metal compute kernel of four-wide fused multiply-adds,
+  dispatched back to back. After the CPU cores this is the biggest power draw
+  in the chip.
+- **Neural booster** — the Apple Neural Engine, kept busy by running a bundled
+  Core ML model in a loop. Honest caveat: the ANE is built for inference *per
+  watt*, so it is much the weakest of the three silicon boosters.
 - **GPS booster** — navigation-grade location updates keep the GPS chip busy.
 - **Bluetooth booster** — continuous scanning with duplicates allowed keeps the
   radio hot.
 - **Torch booster** — full-power flashlight, which genuinely warms the camera
   area.
+
+The boosters live behind the **Boosters** button at the bottom of the screen,
+which opens a translucent panel over the flame. They used to sit on the main
+screen, but six chips pushed the title off the top of a shorter phone.
+
+### Feeding the silicon
+
+The two chip boosters are less obvious than "spin a thread", so:
+
+- **The GPU tunes itself.** How much work fits in one dispatch differs by an
+  order of magnitude between devices, so the loop measures the *GPU* time of
+  each command buffer — not the wall clock around it, which on a phone with six
+  cores already busy-looping is mostly scheduler latency — and steers the
+  kernel's inner-loop count towards a target. Two buffers stay in flight so the
+  GPU never idles waiting for the next submission.
+- **iOS sets the ceiling.** Dispatch too greedily and the system aborts the
+  buffer with `kIOGPUCommandBufferCallbackErrorImpactingInteractivity`. That is
+  treated as information rather than failure: the booster halves its dispatch
+  size, remembers that as a ceiling, and carries on underneath it. On an
+  iPhone 15 it aims high, gets told off once about four seconds in, and then
+  runs indefinitely just below the limit.
+- **The ANE needs a model.** There is no API for putting arbitrary work on the
+  Neural Engine — it runs compiled network graphs and nothing else. So the app
+  ships `HeatNet.mlpackage`, a stack of fp16 convolutions that computes nothing
+  and exists only to be expensive (~22 GFLOP per prediction from 1.3 MB of
+  weights). Regenerate it with `scripts/make_heatnet.py`; it is committed
+  because generating it needs coremltools, which does not ship with macOS.
+
+Both fail quietly if the hardware or the model is missing — a booster that
+cannot run should cost no heat, not take the session down. They log what they
+are doing, which is how you tell "working" from "silently doing nothing":
+
+```bash
+pymobiledevice3 syslog live -pn HandWarmer -mi booster
+```
 
 The screen stays awake as long as the app is visible, so the warmth doesn't
 stop when you stop tapping.
