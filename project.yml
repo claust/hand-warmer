@@ -25,6 +25,11 @@ targets:
       path: HandWarmer/Info.plist
       properties:
         CFBundleDisplayName: Hand Warmer
+        # Substituted rather than literal, so the app and its embedded extension
+        # cannot drift apart. iOS refuses to install a bundle whose extension
+        # carries a different version from its host.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         # Present but empty: opts into the modern launch-screen system (and
         # full-size rendering on every device) using the default background.
         UILaunchScreen: {}
@@ -76,6 +81,9 @@ targets:
       path: HandWarmerWidget/Info.plist
       properties:
         CFBundleDisplayName: Hand Warmer
+        # Must track the host app's version — see the note on the app target.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
 
