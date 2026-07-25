@@ -28,6 +28,15 @@ struct ContentView: View {
                     + "your phone may shut down completely while it runs."
             )
         }
+        .alert("Out of juice", isPresented: $engine.batteryShutdown) {
+            Button("Fine") {}
+        } message: {
+            Text(
+                "Battery is down to \(Int(HeatEngine.batteryFloor * 100))%, so the warmer "
+                    + "switched itself off. Your phone would like to survive long enough "
+                    + "to call someone about those cold hands."
+            )
+        }
         .alert("Too hot!", isPresented: $engine.criticalShutdown) {
             Button("OK") {}
         } message: {
@@ -112,9 +121,9 @@ struct ContentView: View {
                         .frame(width: 150, height: 150)
                         .shadow(color: engine.isRunning ? .orange.opacity(0.7) : .clear, radius: 35)
                     VStack(spacing: 6) {
-                        Image(systemName: engine.isRunning ? "flame.fill" : "flame")
+                        Image(systemName: buttonIcon)
                             .font(.system(size: 44))
-                        Text(engine.isRunning ? "STOP" : "WARM ME")
+                        Text(buttonTitle)
                             .font(.caption.weight(.heavy))
                             .tracking(2)
                     }
@@ -122,6 +131,12 @@ struct ContentView: View {
                 }
             }
             .buttonStyle(.plain)
+            // Below the floor there is nothing to start, so the button becomes
+            // a sign rather than a control.
+            .disabled(batteryCutoff)
+            .opacity(batteryCutoff ? 0.55 : 1)
+            .animation(.easeInOut(duration: 0.3), value: batteryCutoff)
+            .accessibilityLabel(batteryCutoff ? "Hand warmer unavailable, battery too low" : buttonTitle)
             .sensoryFeedback(.impact(weight: .heavy), trigger: engine.isRunning)
         }
     }
@@ -173,6 +188,8 @@ struct ContentView: View {
         Group {
             if engine.isRunning {
                 Text("Warming on all \(engine.coreCount) cores · \(formattedTime)")
+            } else if batteryCutoff {
+                Text("Cold hands beat a dead phone. Find a charger.")
             } else {
                 Text("Once started, it keeps warming in your pocket")
             }
@@ -184,9 +201,29 @@ struct ContentView: View {
 
     // MARK: - Actions & formatting
 
+    /// Read off the view's `batteryLevel` rather than the engine's, so the
+    /// `-battery` debug override moves the button and the readout together.
+    private var batteryCutoff: Bool {
+        HeatEngine.atBatteryFloor(level: batteryLevel, state: engine.batteryState)
+    }
+
+    private var buttonIcon: String {
+        if batteryCutoff { return "bolt.slash.fill" }
+        return engine.isRunning ? "flame.fill" : "flame"
+    }
+
+    private var buttonTitle: String {
+        if batteryCutoff { return "NO JUICE" }
+        return engine.isRunning ? "STOP" : "WARM ME"
+    }
+
     private func toggle() {
         if engine.isRunning {
             engine.stop()
+        } else if batteryCutoff {
+            // Belt and braces: the button is disabled, but -autostart calls
+            // this directly.
+            return
         } else if engine.lowBattery {
             showLowBatteryWarning = true
         } else {

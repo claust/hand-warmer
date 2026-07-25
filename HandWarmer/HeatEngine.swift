@@ -16,6 +16,7 @@ final class HeatEngine: NSObject, ObservableObject {
     @Published private(set) var batteryState: UIDevice.BatteryState = .unknown
     @Published private(set) var thermalState: ProcessInfo.ThermalState = .nominal
     @Published var criticalShutdown = false
+    @Published var batteryShutdown = false
 
     /// Continuous 0...1 stand-in for temperature, for the heat meter.
     /// `thermalState` only has four steps and changes minutes apart, so the
@@ -113,6 +114,18 @@ final class HeatEngine: NSObject, ObservableObject {
         batteryLevel >= 0 && batteryLevel < 0.2 && batteryState != .charging && batteryState != .full
     }
 
+    /// The warmer refuses to run at or below this: a dead phone in a cold
+    /// pocket is worse than cold hands.
+    static let batteryFloor: Float = 0.10
+
+    /// Shared by the engine and the UI so the disabled button and the auto-stop
+    /// can never disagree. Levels arrive as 5% Float steps, hence the slack.
+    static func atBatteryFloor(level: Float, state: UIDevice.BatteryState) -> Bool {
+        level >= 0 && level <= batteryFloor + 0.005 && state != .charging && state != .full
+    }
+
+    var atBatteryFloor: Bool { Self.atBatteryFloor(level: batteryLevel, state: batteryState) }
+
     // MARK: - Control
 
     @MainActor
@@ -128,8 +141,15 @@ final class HeatEngine: NSObject, ObservableObject {
             return
         }
 
+        // The button is disabled at the floor, but -autostart calls this direct.
+        guard !atBatteryFloor else {
+            batteryShutdown = true
+            return
+        }
+
         isRunning = true
         criticalShutdown = false
+        batteryShutdown = false
         sessionSeconds = 0
         bandEntered = Date()
         startedAt = Date()
@@ -221,7 +241,8 @@ final class HeatEngine: NSObject, ObservableObject {
         Self.setTorch(on: active && torchBoost)
     }
 
-    private func startScanIfPoweredOn() {
+    /// Not private: the Bluetooth delegate lives in HeatEngine+Radios.swift.
+    func startScanIfPoweredOn() {
         guard let cm = centralManager, cm.state == .poweredOn, !cm.isScanning else { return }
         // Allowing duplicates keeps the radio continuously busy.
         cm.scanForPeripherals(
@@ -322,9 +343,21 @@ final class HeatEngine: NSObject, ObservableObject {
     // MARK: - Telemetry
 
     @objc private func refreshBattery() {
+        // Battery notifications arrive on an arbitrary thread; hop to main the
+        // same way `thermalChanged` does, and for the same reasons.
         DispatchQueue.main.async {
-            self.batteryLevel = UIDevice.current.batteryLevel
-            self.batteryState = UIDevice.current.batteryState
+            MainActor.assumeIsolated {
+                self.batteryLevel = UIDevice.current.batteryLevel
+                self.batteryState = UIDevice.current.batteryState
+
+                // The other safety valve, alongside the thermal one: at the
+                // floor the session ends itself rather than taking the phone
+                // with it.
+                if self.atBatteryFloor, self.isRunning {
+                    self.stop()
+                    self.batteryShutdown = true
+                }
+            }
         }
     }
 
@@ -363,20 +396,5 @@ final class HeatEngine: NSObject, ObservableObject {
             stop()
             criticalShutdown = true
         }
-    }
-}
-
-extension HeatEngine: CBCentralManagerDelegate {
-    func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        // A late state update (Bluetooth switched back on, say) must not
-        // resurrect a scan the user has since turned off.
-        guard isRunning, bluetoothBoost else { return }
-        startScanIfPoweredOn()
-    }
-}
-
-extension HeatEngine: CLLocationManagerDelegate {
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        if isRunning && gpsBoost { manager.startUpdatingLocation() }
     }
 }

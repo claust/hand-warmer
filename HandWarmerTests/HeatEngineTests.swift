@@ -1,3 +1,4 @@
+import UIKit
 import XCTest
 
 @testable import HandWarmer
@@ -61,6 +62,40 @@ final class HeatEngineTests: XCTestCase {
             ProcessInfo.ThermalState(rawValue: 99),
             "ThermalState rejects unknown raw values on this OS; nothing to check")
         XCTAssertEqual(HeatEngine.label(for: future), "Unknown")
+    }
+
+    // MARK: - Battery floor
+
+    /// The floor is the one number the disabled button, the auto-stop and the
+    /// alert copy all read from, so pin it.
+    func testBatteryFloorIsTenPercent() {
+        XCTAssertEqual(HeatEngine.batteryFloor, 0.10)
+    }
+
+    /// `batteryLevel` arrives in 5% steps as a Float, so an exact 10% reading
+    /// must count as at-the-floor despite the rounding.
+    func testFloorCatchesTenPercentAndBelow() {
+        for level: Float in [0, 0.05, 0.10] {
+            XCTAssertTrue(
+                HeatEngine.atBatteryFloor(level: level, state: .unplugged),
+                "\(level) should be at the floor")
+        }
+    }
+
+    func testAboveTheFloorIsFine() {
+        for level: Float in [0.15, 0.20, 1.0] {
+            XCTAssertFalse(
+                HeatEngine.atBatteryFloor(level: level, state: .unplugged),
+                "\(level) should be above the floor")
+        }
+    }
+
+    /// A device on the charger is refilling, so the floor does not apply — and
+    /// an unknown level (-1, the simulator) is not a reading at all.
+    func testChargingAndUnknownLevelsAreNotAtTheFloor() {
+        XCTAssertFalse(HeatEngine.atBatteryFloor(level: 0.05, state: .charging))
+        XCTAssertFalse(HeatEngine.atBatteryFloor(level: 0.05, state: .full))
+        XCTAssertFalse(HeatEngine.atBatteryFloor(level: -1, state: .unknown))
     }
 
     // MARK: - Lifecycle
