@@ -15,9 +15,11 @@ struct HeatLiveActivity: Widget {
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     HStack(spacing: 8) {
-                        LiveFlame(phase: context.state.flamePhase,
-                                  intensity: context.state.heatLevel)
-                            .frame(width: 26, height: 34)
+                        LiveFlame(
+                            phase: context.state.flamePhase,
+                            intensity: context.state.heatLevel
+                        )
+                        .frame(width: 26, height: 34)
                         VStack(alignment: .leading, spacing: 1) {
                             Text("Warming")
                                 .font(.caption.weight(.semibold))
@@ -57,18 +59,22 @@ struct HeatLiveActivity: Widget {
                                     .foregroundStyle(.orange)
                             }
                             Spacer()
-                            Label(batteryText(context.state.batteryLevel),
-                                  systemImage: "battery.50percent")
-                                .font(.caption.monospacedDigit())
-                                .foregroundStyle(batteryColor(context.state.batteryLevel))
+                            Label(
+                                batteryText(context.state.batteryLevel),
+                                systemImage: "battery.50percent"
+                            )
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(batteryColor(context.state.batteryLevel))
                         }
                     }
                     .padding(.top, 2)
                 }
             } compactLeading: {
-                LiveFlame(phase: context.state.flamePhase,
-                          intensity: context.state.heatLevel)
-                    .frame(width: 16, height: 21)
+                LiveFlame(
+                    phase: context.state.flamePhase,
+                    intensity: context.state.heatLevel
+                )
+                .frame(width: 16, height: 21)
             } compactTrailing: {
                 elapsed(from: context.state.startedAt)
                     .font(.caption.monospacedDigit())
@@ -78,9 +84,11 @@ struct HeatLiveActivity: Widget {
                     // island doesn't twitch every time the minute rolls over.
                     .frame(width: 42)
             } minimal: {
-                LiveFlame(phase: context.state.flamePhase,
-                          intensity: context.state.heatLevel)
-                    .frame(width: 14, height: 19)
+                LiveFlame(
+                    phase: context.state.flamePhase,
+                    intensity: context.state.heatLevel
+                )
+                .frame(width: 14, height: 19)
             }
             .keylineTint(.orange)
         }
@@ -93,9 +101,11 @@ private struct LockScreenBanner: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            LiveFlame(phase: context.state.flamePhase,
-                      intensity: context.state.heatLevel)
-                .frame(width: 34, height: 46)
+            LiveFlame(
+                phase: context.state.flamePhase,
+                intensity: context.state.heatLevel
+            )
+            .frame(width: 34, height: 46)
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {

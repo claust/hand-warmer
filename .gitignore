@@ -2,6 +2,11 @@
 #
 # gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
 
+## Generated project
+# The Xcode project is generated from project.yml by XcodeGen (`make ios-generate`),
+# so it is a build artifact rather than a source file.
+*.xcodeproj
+
 ## User settings
 xcuserdata/
 

@@ -5,7 +5,8 @@
 #   make ios-run IOS_SIMULATOR="iPhone 17 Pro Max"
 #   make ios-deploy IOS_DEVICE=<name-or-udid>
 
-.PHONY: ios-generate ios-run ios-deploy ios-screenshot format-ios check-ios clean
+.PHONY: ios-generate ios-build ios-test ios-run ios-deploy ios-screenshot \
+	format-ios lint-ios check-ios clean
 
 IOS_SCHEME     = HandWarmer
 # Built product name (<IOS_APP_NAME>.app). Keep it in sync with IOS_SCHEME's
@@ -14,6 +15,9 @@ IOS_APP_NAME   = HandWarmer
 IOS_BUNDLE_ID  = com.claus.HandWarmer
 IOS_PROJECT    = HandWarmer.xcodeproj
 IOS_SIMULATOR ?= iPhone 17 Pro
+# Simulator destination shared by ios-build and ios-test (and by CI, which
+# overrides it to pin the runtime).
+IOS_DESTINATION ?= platform=iOS Simulator,name=$(IOS_SIMULATOR)
 IOS_DERIVED    = build
 IOS_DERIVED_DEVICE = build-device
 
@@ -22,12 +26,30 @@ IOS_DERIVED_DEVICE = build-device
 # `make ios-deploy IOS_TEAM=XXXXXXXXXX` if you build under a different account.
 IOS_TEAM ?= RS2FKJW2W4
 
+# Prettifier for xcodebuild output. Optional: `brew install xcbeautify` to get
+# readable logs; without it the raw xcodebuild output passes straight through.
+BEAUTIFY := $(shell command -v xcbeautify >/dev/null 2>&1 && echo xcbeautify || echo cat)
+
 # Regenerate the (gitignored) Xcode project from project.yml.
 # Requires `brew install xcodegen`.
 ios-generate:
 	@command -v xcodegen >/dev/null 2>&1 || { \
 		echo "xcodegen not found. Install it with: brew install xcodegen"; exit 1; }
 	xcodegen generate
+
+# Compile the app and its tests for the simulator without running anything.
+# No signing is involved, so this needs no developer account. Piped through
+# xcbeautify when it is installed, raw otherwise.
+ios-build: ios-generate
+	set -o pipefail; xcodebuild build-for-testing -project "$(IOS_PROJECT)" -scheme "$(IOS_SCHEME)" \
+		-destination '$(IOS_DESTINATION)' -derivedDataPath "$(IOS_DERIVED)" \
+		CODE_SIGNING_ALLOWED=NO | $(BEAUTIFY)
+
+# Run the unit tests against the build produced by ios-build.
+ios-test: ios-build
+	set -o pipefail; xcodebuild test-without-building -project "$(IOS_PROJECT)" -scheme "$(IOS_SCHEME)" \
+		-destination '$(IOS_DESTINATION)' -derivedDataPath "$(IOS_DERIVED)" \
+		CODE_SIGNING_ALLOWED=NO | $(BEAUTIFY)
 
 # Build, install, and launch on the iOS Simulator. Boots the target simulator
 # and opens Simulator.app if it isn't already running.
@@ -78,19 +100,28 @@ ios-screenshot:
 		$(if $(SIM),--simulator="$(SIM)") $(if $(DEV),--device="$(DEV)") "$(OUT)"
 
 # Format Swift sources in place with Apple's swift-format (bundled with Xcode).
+# Style comes from .swift-format at the repo root.
 format-ios:
 	@if xcrun --find swift-format >/dev/null 2>&1; then \
-		xcrun swift-format format --in-place --recursive HandWarmer; \
+		xcrun swift-format format --in-place --recursive HandWarmer HandWarmerTests; \
 	else \
 		echo "Skipping format-ios (swift-format not found — needs macOS + Xcode)"; \
 	fi
 
-# Lint formatting without changing anything.
-check-ios:
+# SwiftLint owns the semantic rules (naming, complexity, line length); config is
+# .swiftlint.yml. --strict promotes warnings to errors so nothing merges dirty.
+lint-ios:
+	@command -v swiftlint >/dev/null 2>&1 || { \
+		echo "swiftlint not found. Install it with: brew install swiftlint"; exit 1; }
+	swiftlint lint --quiet --strict
+
+# Run SwiftLint (via the prerequisite above), then lint formatting without
+# changing anything. This is what CI gates on.
+check-ios: lint-ios
 	@if xcrun --find swift-format >/dev/null 2>&1; then \
-		xcrun swift-format lint --strict --recursive HandWarmer; \
+		xcrun swift-format lint --strict --recursive HandWarmer HandWarmerTests; \
 	else \
-		echo "Skipping check-ios (swift-format not found — needs macOS + Xcode)"; \
+		echo "Skipping swift-format lint (not found — needs macOS + Xcode)"; \
 	fi
 
 clean:

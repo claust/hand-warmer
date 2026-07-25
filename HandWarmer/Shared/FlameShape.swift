@@ -18,16 +18,19 @@ struct FlameShape: Shape {
         var path = Path()
         path.move(to: CGPoint(x: base.x - w / 2, y: base.y))
         // Left side up to the tip.
-        path.addCurve(to: tip,
-                      control1: CGPoint(x: base.x - w * 0.62, y: base.y - h * 0.45),
-                      control2: CGPoint(x: base.x - w * 0.10, y: base.y - h * 0.80))
+        path.addCurve(
+            to: tip,
+            control1: CGPoint(x: base.x - w * 0.62, y: base.y - h * 0.45),
+            control2: CGPoint(x: base.x - w * 0.10, y: base.y - h * 0.80))
         // Right side back down.
-        path.addCurve(to: CGPoint(x: base.x + w / 2, y: base.y),
-                      control1: CGPoint(x: base.x + w * 0.10, y: base.y - h * 0.80),
-                      control2: CGPoint(x: base.x + w * 0.62, y: base.y - h * 0.45))
+        path.addCurve(
+            to: CGPoint(x: base.x + w / 2, y: base.y),
+            control1: CGPoint(x: base.x + w * 0.10, y: base.y - h * 0.80),
+            control2: CGPoint(x: base.x + w * 0.62, y: base.y - h * 0.45))
         // Rounded bottom.
-        path.addQuadCurve(to: CGPoint(x: base.x - w / 2, y: base.y),
-                          control: CGPoint(x: base.x, y: base.y + w * 0.30))
+        path.addQuadCurve(
+            to: CGPoint(x: base.x - w / 2, y: base.y),
+            control: CGPoint(x: base.x, y: base.y + w * 0.30))
         path.closeSubpath()
         return path
     }
@@ -55,23 +58,32 @@ struct LiveFlame: View {
         let amp = 0.55 + 0.45 * min(max(intensity, 0), 1)
 
         ZStack {
-            layer(colors: [Color(red: 0.95, green: 0.25, blue: 0.05),
-                           Color(red: 1.0, green: 0.45, blue: 0.0)],
-                  width: 0.86, height: 1.0,
-                  wobbleX: b, wobbleY: a, lean: a, amp: amp)
+            layer(
+                colors: [
+                    Color(red: 0.95, green: 0.25, blue: 0.05),
+                    Color(red: 1.0, green: 0.45, blue: 0.0),
+                ],
+                width: 0.86, height: 1.0,
+                wobbleX: b, wobbleY: a, lean: a, amp: amp)
 
-            layer(colors: [Color(red: 1.0, green: 0.55, blue: 0.05),
-                           Color(red: 1.0, green: 0.78, blue: 0.12)],
-                  // Leans against the outer layer rather than with it, which is
-                  // what makes the flame look like it is folding over itself.
-                  // Kept narrow so the swing stays inside the outer silhouette.
-                  width: 0.44, height: 0.70,
-                  wobbleX: c, wobbleY: b, lean: -b * 1.1, amp: amp)
+            layer(
+                colors: [
+                    Color(red: 1.0, green: 0.55, blue: 0.05),
+                    Color(red: 1.0, green: 0.78, blue: 0.12),
+                ],
+                // Leans against the outer layer rather than with it, which is
+                // what makes the flame look like it is folding over itself.
+                // Kept narrow so the swing stays inside the outer silhouette.
+                width: 0.44, height: 0.70,
+                wobbleX: c, wobbleY: b, lean: -b * 1.1, amp: amp)
 
-            layer(colors: [Color(red: 1.0, green: 0.85, blue: 0.35),
-                           Color(red: 1.0, green: 0.98, blue: 0.80)],
-                  width: 0.26, height: 0.44,
-                  wobbleX: a, wobbleY: c, lean: c * 2.2, amp: amp)
+            layer(
+                colors: [
+                    Color(red: 1.0, green: 0.85, blue: 0.35),
+                    Color(red: 1.0, green: 0.98, blue: 0.80),
+                ],
+                width: 0.26, height: 0.44,
+                wobbleX: a, wobbleY: c, lean: c * 2.2, amp: amp)
         }
         // Matched to the controller's background tick, so the flame is still
         // travelling toward one phase as the next arrives and never visibly
@@ -81,14 +93,18 @@ struct LiveFlame: View {
         .compositingGroup()
     }
 
-    private func layer(colors: [Color], width: Double, height: Double,
-                       wobbleX: Double, wobbleY: Double, lean: Double,
-                       amp: Double) -> some View {
+    private func layer(
+        colors: [Color], width: Double, height: Double,
+        wobbleX: Double, wobbleY: Double, lean: Double,
+        amp: Double
+    ) -> some View {
         FlameShape()
             .fill(LinearGradient(colors: colors, startPoint: .bottom, endPoint: .top))
-            .scaleEffect(x: width * (1 + 0.20 * wobbleX * amp),
-                         y: height * (1 + 0.30 * wobbleY * amp),
-                         anchor: .bottom)
+            .scaleEffect(
+                x: width * (1 + 0.20 * wobbleX * amp),
+                y: height * (1 + 0.30 * wobbleY * amp),
+                anchor: .bottom
+            )
             // Rotating about the base is what throws the tip side to side; at
             // island size a few degrees is invisible, so lean hard.
             .rotationEffect(.degrees(9 * lean * amp), anchor: .bottom)

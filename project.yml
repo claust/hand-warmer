@@ -78,3 +78,29 @@ targets:
         CFBundleDisplayName: Hand Warmer
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+  HandWarmerTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - HandWarmerTests
+    dependencies:
+      - target: HandWarmer
+    settings:
+      base:
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: "YES"
+
+# Declared explicitly rather than left to Xcode's autocreated schemes, so
+# `xcodebuild -scheme HandWarmer test` runs the same thing locally and in CI.
+schemes:
+  HandWarmer:
+    build:
+      targets:
+        HandWarmer: all
+        HandWarmerTests: [test]
+    test:
+      targets:
+        - HandWarmerTests
+    run:
+      config: Debug

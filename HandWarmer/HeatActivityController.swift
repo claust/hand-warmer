@@ -73,17 +73,20 @@ final class HeatActivityController {
         // async, so two begins in quick succession would both still see a nil
         // activity and each ask for one, leaving a duplicate flame behind.
         guard !wantsActivity, activity == nil,
-              ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+            ActivityAuthorizationInfo().areActivitiesEnabled
+        else { return }
         phase = 0
         wantsActivity = true
         Task { @MainActor in
             guard self.wantsActivity, self.activity == nil,
-                  let state = self.currentState() else { return }
+                let state = self.currentState()
+            else { return }
             do {
                 let new = try Activity.request(
                     attributes: HeatActivityAttributes(coreCount: coreCount),
-                    content: ActivityContent(state: state,
-                                             staleDate: Date().addingTimeInterval(Self.staleAfter)),
+                    content: ActivityContent(
+                        state: state,
+                        staleDate: Date().addingTimeInterval(Self.staleAfter)),
                     pushType: nil)
                 self.activity = new
                 self.restartTicker()
@@ -139,8 +142,9 @@ final class HeatActivityController {
         guard let activity, updateTask == nil, var state = currentState() else { return }
         phase &+= 1
         state.flamePhase = phase
-        let content = ActivityContent(state: state,
-                                      staleDate: Date().addingTimeInterval(Self.staleAfter))
+        let content = ActivityContent(
+            state: state,
+            staleDate: Date().addingTimeInterval(Self.staleAfter))
         updateTask = Task { @MainActor in
             await activity.update(content)
             self.updateTask = nil

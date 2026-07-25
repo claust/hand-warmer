@@ -55,12 +55,14 @@ final class BackgroundKeepAlive {
         // while *not* resuming silently kills a running warming session.
         observer = NotificationCenter.default.addObserver(
             forName: AVAudioSession.interruptionNotification,
-            object: session, queue: .main) { [weak self] note in
-                guard let raw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
-                      AVAudioSession.InterruptionType(rawValue: raw) == .ended else { return }
-                try? session.setActive(true)
-                self?.player?.play()
-            }
+            object: session, queue: .main
+        ) { [weak self] note in
+            guard let raw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+                AVAudioSession.InterruptionType(rawValue: raw) == .ended
+            else { return }
+            try? session.setActive(true)
+            self?.player?.play()
+        }
     }
 
     func stop() {
@@ -95,7 +97,7 @@ final class BackgroundKeepAlive {
         append(UInt32(36) + dataSize)
         data.append(contentsOf: Array("WAVEfmt ".utf8))
         append(UInt32(16))  // size of the fmt chunk
-        append(UInt16(1))   // PCM, uncompressed
+        append(UInt16(1))  // PCM, uncompressed
         append(channels)
         append(sampleRate)
         append(byteRate)

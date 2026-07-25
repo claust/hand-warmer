@@ -28,24 +28,35 @@ struct FlameView: View {
                 let height = size.height * 0.88 * intensity
                 let width = size.width * 0.62 * intensity
 
-                drawFlame(ctx: &ctx, base: base, w: width, h: height, t: t, phase: 0,
-                          colors: [Color(red: 0.95, green: 0.25, blue: 0.05).opacity(0.85),
-                                   Color(red: 1.0, green: 0.45, blue: 0.0).opacity(0.9)])
-                drawFlame(ctx: &ctx, base: base, w: width * 0.66, h: height * 0.72, t: t, phase: 1.7,
-                          colors: [Color(red: 1.0, green: 0.55, blue: 0.05),
-                                   Color(red: 1.0, green: 0.75, blue: 0.1)])
-                drawFlame(ctx: &ctx, base: base, w: width * 0.36, h: height * 0.45, t: t, phase: 3.1,
-                          colors: [Color(red: 1.0, green: 0.85, blue: 0.3),
-                                   Color(red: 1.0, green: 0.98, blue: 0.75)])
+                drawFlame(
+                    ctx: &ctx, base: base, w: width, h: height, t: t, phase: 0,
+                    colors: [
+                        Color(red: 0.95, green: 0.25, blue: 0.05).opacity(0.85),
+                        Color(red: 1.0, green: 0.45, blue: 0.0).opacity(0.9),
+                    ])
+                drawFlame(
+                    ctx: &ctx, base: base, w: width * 0.66, h: height * 0.72, t: t, phase: 1.7,
+                    colors: [
+                        Color(red: 1.0, green: 0.55, blue: 0.05),
+                        Color(red: 1.0, green: 0.75, blue: 0.1),
+                    ])
+                drawFlame(
+                    ctx: &ctx, base: base, w: width * 0.36, h: height * 0.45, t: t, phase: 3.1,
+                    colors: [
+                        Color(red: 1.0, green: 0.85, blue: 0.3),
+                        Color(red: 1.0, green: 0.98, blue: 0.75),
+                    ])
             }
             .blur(radius: 1.5)
             .shadow(color: .orange.opacity(0.6 * intensity), radius: 30 * intensity)
         }
     }
 
-    private func drawFlame(ctx: inout GraphicsContext, base: CGPoint,
-                           w: CGFloat, h: CGFloat, t: TimeInterval, phase: Double,
-                           colors: [Color]) {
+    private func drawFlame(
+        ctx: inout GraphicsContext, base: CGPoint,
+        w: CGFloat, h: CGFloat, t: TimeInterval, phase: Double,
+        colors: [Color]
+    ) {
         // Flicker: several out-of-phase sines so it never visibly repeats.
         let flick = sin(t * 9 + phase) * 0.06 + sin(t * 5.3 + phase * 2) * 0.05
         let sway = CGFloat(sin(t * 3.1 + phase) * 0.10 + sin(t * 7.7 + phase) * 0.04)
@@ -55,23 +66,28 @@ struct FlameView: View {
         var path = Path()
         path.move(to: CGPoint(x: base.x - w / 2, y: base.y))
         // Left side up to the tip.
-        path.addCurve(to: tip,
-                      control1: CGPoint(x: base.x - w * 0.62, y: base.y - hh * 0.45),
-                      control2: CGPoint(x: base.x - w * 0.10 + w * sway, y: base.y - hh * 0.8))
+        path.addCurve(
+            to: tip,
+            control1: CGPoint(x: base.x - w * 0.62, y: base.y - hh * 0.45),
+            control2: CGPoint(x: base.x - w * 0.10 + w * sway, y: base.y - hh * 0.8))
         // Right side back down.
-        path.addCurve(to: CGPoint(x: base.x + w / 2, y: base.y),
-                      control1: CGPoint(x: base.x + w * 0.10 + w * sway, y: base.y - hh * 0.8),
-                      control2: CGPoint(x: base.x + w * 0.62, y: base.y - hh * 0.45))
+        path.addCurve(
+            to: CGPoint(x: base.x + w / 2, y: base.y),
+            control1: CGPoint(x: base.x + w * 0.10 + w * sway, y: base.y - hh * 0.8),
+            control2: CGPoint(x: base.x + w * 0.62, y: base.y - hh * 0.45))
         // Rounded bottom.
-        path.addQuadCurve(to: CGPoint(x: base.x - w / 2, y: base.y),
-                          control: CGPoint(x: base.x, y: base.y + w * 0.30))
+        path.addQuadCurve(
+            to: CGPoint(x: base.x - w / 2, y: base.y),
+            control: CGPoint(x: base.x, y: base.y + w * 0.30))
         path.closeSubpath()
 
         let gradient = Gradient(colors: colors)
-        ctx.fill(path, with: .linearGradient(
-            gradient,
-            startPoint: CGPoint(x: base.x, y: base.y),
-            endPoint: CGPoint(x: base.x, y: base.y - hh)))
+        ctx.fill(
+            path,
+            with: .linearGradient(
+                gradient,
+                startPoint: CGPoint(x: base.x, y: base.y),
+                endPoint: CGPoint(x: base.x, y: base.y - hh)))
     }
 }
 
