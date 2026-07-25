@@ -22,6 +22,9 @@ final class HeatActivityController {
 
     private var activity: Activity<HeatActivityAttributes>?
     private var ticker: AnyCancellable?
+    /// The update currently in flight, if any, so ticks can be dropped instead
+    /// of queued behind a slow one.
+    private var updateTask: Task<Void, Never>?
     private var phase = 0
     /// Whether a session is meant to be showing. `begin` completes
     /// asynchronously, so without this a stop that lands mid-request would be
@@ -48,33 +51,48 @@ final class HeatActivityController {
     /// flame that will never stop flickering and a clock counting up from a
     /// session that ended hours ago.
     ///
-    /// Awaited from `begin` rather than fired off at launch: `Activity.activities`
-    /// is populated asynchronously from `liveactivitiesd`, so a cleanup started
-    /// at init routinely reads an empty list, misses the orphan, and leaves the
-    /// island with two live activities to choose between — at which point it
-    /// shows neither of them reliably.
-    private func endStrays() async {
-        for stray in Activity<HeatActivityAttributes>.activities {
+    /// Leaving two live activities around makes the island pick between them
+    /// and show neither reliably, so strays are swept rather than tolerated.
+    /// `keeping` is our own activity, which must survive the sweep.
+    private func endStrays(except keeping: String? = nil) async {
+        for stray in Activity<HeatActivityAttributes>.activities where stray.id != keeping {
             await stray.end(nil, dismissalPolicy: .immediate)
         }
     }
 
+    // A launch-time sweep — clearing a crashed session's flame even when the
+    // user never warms again this launch — was tried and removed. Every variant
+    // ended up racing the session that was starting and killing the live
+    // activity a second or two after it appeared, which is how the island came
+    // to be blank for whole sessions. Sweeping only from `begin`, after our own
+    // request has succeeded, is the version that behaves. The cost is that a
+    // stray flame lingers until the next time warming starts.
+
     func begin(coreCount: Int) {
-        guard activity == nil, ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        // `wantsActivity`, not `activity`, is the guard: the request below is
+        // async, so two begins in quick succession would both still see a nil
+        // activity and each ask for one, leaving a duplicate flame behind.
+        guard !wantsActivity, activity == nil,
+              ActivityAuthorizationInfo().areActivitiesEnabled else { return }
         phase = 0
         wantsActivity = true
         Task { @MainActor in
-            await endStrays()
-            // The warmer may have been switched off again while we waited.
             guard self.wantsActivity, self.activity == nil,
                   let state = self.currentState() else { return }
             do {
-                self.activity = try Activity.request(
+                let new = try Activity.request(
                     attributes: HeatActivityAttributes(coreCount: coreCount),
                     content: ActivityContent(state: state,
                                              staleDate: Date().addingTimeInterval(Self.staleAfter)),
                     pushType: nil)
+                self.activity = new
                 self.restartTicker()
+
+                // Sweep afterwards, never before: ending a stray can stall, and
+                // when it did, the request behind it never ran and the island
+                // stayed empty for the whole session. Ours is already live by
+                // this point, so a slow sweep costs nothing.
+                await self.endStrays(except: new.id)
             } catch {
                 // Activities can be off system-wide or refused under load. The
                 // warmer itself is unaffected, so carry on without the island.
@@ -86,6 +104,8 @@ final class HeatActivityController {
     func end() {
         ticker = nil
         wantsActivity = false
+        updateTask?.cancel()
+        updateTask = nil
         guard let activity else { return }
         self.activity = nil
         Task { await activity.end(nil, dismissalPolicy: .immediate) }
@@ -112,11 +132,18 @@ final class HeatActivityController {
     }
 
     private func push() {
-        guard let activity, var state = currentState() else { return }
+        // Skip the tick while an update is still in flight rather than stacking
+        // another one behind it. At 2 Hz a queue would only grow, and for an
+        // animation a dropped frame is always better than a backlog of stale
+        // ones arriving late.
+        guard let activity, updateTask == nil, var state = currentState() else { return }
         phase &+= 1
         state.flamePhase = phase
         let content = ActivityContent(state: state,
                                       staleDate: Date().addingTimeInterval(Self.staleAfter))
-        Task { await activity.update(content) }
+        updateTask = Task { @MainActor in
+            await activity.update(content)
+            self.updateTask = nil
+        }
     }
 }

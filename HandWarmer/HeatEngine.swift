@@ -100,6 +100,7 @@ final class HeatEngine: NSObject, ObservableObject {
         island.setBackgrounded(backgrounded)
     }
 
+
     var lowBattery: Bool {
         batteryLevel >= 0 && batteryLevel < 0.2 && batteryState != .charging && batteryState != .full
     }
