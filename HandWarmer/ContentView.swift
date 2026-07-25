@@ -31,10 +31,12 @@ struct ContentView: View {
         .alert("Out of juice", isPresented: $engine.batteryShutdown) {
             Button("Fine") {}
         } message: {
+            // Covers both ways the engine raises this: a session stopping at
+            // the floor, and a start refused there.
             Text(
-                "Battery is down to \(Int(HeatEngine.batteryFloor * 100))%, so the warmer "
-                    + "switched itself off. Your phone would like to survive long enough "
-                    + "to call someone about those cold hands."
+                "The warmer stops at \(Int(HeatEngine.batteryFloor * 100))% and won't start "
+                    + "below it. Your phone would like to survive long enough to call "
+                    + "someone about those cold hands."
             )
         }
         .alert("Too hot!", isPresented: $engine.criticalShutdown) {

@@ -64,7 +64,11 @@ final class HeatEngine: NSObject, ObservableObject {
         // last snapshot on the way out.
         island.snapshot = { [weak self] in self?.activityState() }
         UIDevice.current.isBatteryMonitoringEnabled = true
-        refreshBattery()
+        // Seeded here rather than through `refreshBattery`, whose hop to main
+        // would leave the level at -1 for a runloop turn — long enough for a
+        // start on the first frame to sail past the battery floor.
+        batteryLevel = UIDevice.current.batteryLevel
+        batteryState = UIDevice.current.batteryState
         thermalState = ProcessInfo.processInfo.thermalState
         heatLevel = Self.band(for: thermalState).lowerBound
 
@@ -114,8 +118,7 @@ final class HeatEngine: NSObject, ObservableObject {
         batteryLevel >= 0 && batteryLevel < 0.2 && batteryState != .charging && batteryState != .full
     }
 
-    /// The warmer refuses to run at or below this: a dead phone in a cold
-    /// pocket is worse than cold hands.
+    /// Refuse to run at or below this: a dead phone is worse than cold hands.
     static let batteryFloor: Float = 0.10
 
     /// Shared by the engine and the UI so the button and the auto-stop can never
@@ -277,17 +280,6 @@ final class HeatEngine: NSObject, ObservableObject {
 
     // MARK: - Heat meter
 
-    /// Slice of the meter owned by each thermal state.
-    static func band(for state: ProcessInfo.ThermalState) -> ClosedRange<Double> {
-        switch state {
-        case .nominal: return 0.00...0.30
-        case .fair: return 0.30...0.60
-        case .serious: return 0.60...0.85
-        case .critical: return 0.85...1.00
-        @unknown default: return 0.00...0.30
-        }
-    }
-
     /// Seconds of warming it takes to cross one band. Chosen so the bar is
     /// visibly moving from the first second without racing ahead of reality.
     private static let bandCrossing: TimeInterval = 150
@@ -308,18 +300,6 @@ final class HeatEngine: NSObject, ObservableObject {
     }
 
     // MARK: - Live Activity
-
-    /// Short label for a thermal state, shared by the main screen and the
-    /// Dynamic Island so the two readouts can never disagree.
-    static func label(for state: ProcessInfo.ThermalState) -> String {
-        switch state {
-        case .nominal: return "Cool"
-        case .fair: return "Warm"
-        case .serious: return "Hot"
-        case .critical: return "Very hot"
-        @unknown default: return "Unknown"
-        }
-    }
 
     /// Current readings for the island. `flamePhase` is filled in by the
     /// controller, which owns the animation clock.
