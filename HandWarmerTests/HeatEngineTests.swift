@@ -65,6 +65,11 @@ final class HeatEngineTests: XCTestCase {
 
     // MARK: - Lifecycle
 
+    // The engine drives the Live Activity controller, which is main-actor
+    // isolated, so these have to run there too — the isolation is what makes
+    // that a compile error instead of an occasional flake.
+
+    @MainActor
     func testStartThenStopTogglesIsRunning() throws {
         let engine = HeatEngine()
         try XCTSkipIf(
@@ -78,6 +83,7 @@ final class HeatEngineTests: XCTestCase {
         XCTAssertFalse(engine.isRunning)
     }
 
+    @MainActor
     func testStopWithoutStartIsHarmless() {
         let engine = HeatEngine()
         engine.stop()
@@ -87,12 +93,14 @@ final class HeatEngineTests: XCTestCase {
 
     /// The initial heat level has to start inside the band for the current
     /// thermal state, otherwise the bar contradicts its own label on launch.
+    @MainActor
     func testInitialHeatLevelSitsInsideItsBand() {
         let engine = HeatEngine()
         let band = HeatEngine.band(for: engine.thermalState)
         XCTAssertTrue(band.contains(engine.heatLevel))
     }
 
+    @MainActor
     func testCoreCountIsPositive() {
         XCTAssertGreaterThan(HeatEngine().coreCount, 0)
     }

@@ -55,6 +55,7 @@ final class HeatEngine: NSObject, ObservableObject {
     private let keepAlive = BackgroundKeepAlive()
     private let island = HeatActivityController()
 
+    @MainActor
     override init() {
         super.init()
         // Weak, not unowned: the controller's in-flight request task holds the
@@ -88,14 +89,22 @@ final class HeatEngine: NSObject, ObservableObject {
         // ever stop them if this engine went away mid-session — they would
         // spin for the lifetime of the process.
         stopFlag.set(true)
-        setTorch(on: false)
+        Self.setTorch(on: false)
         keepAlive.stop()
-        island.end()
         NotificationCenter.default.removeObserver(self)
+
+        // No `island.end()` here. A deinit cannot touch the main-actor-isolated
+        // controller, and the call was close to theatre anyway: ending an
+        // activity is async, so at process teardown — the only time the
+        // retained engine deinits — it could never have completed. The engines
+        // SwiftUI discards never started a session, so they have nothing to
+        // end. `stop()` remains the real path, and `begin()` sweeps anything a
+        // crash leaves behind.
     }
 
     /// Told by the scene phase. Only affects how hard the Dynamic Island is
     /// driven — the heat itself runs the same either way.
+    @MainActor
     func setBackgrounded(_ backgrounded: Bool) {
         island.setBackgrounded(backgrounded)
     }
@@ -106,6 +115,7 @@ final class HeatEngine: NSObject, ObservableObject {
 
     // MARK: - Control
 
+    @MainActor
     func start() {
         guard !isRunning else { return }
 
@@ -147,6 +157,7 @@ final class HeatEngine: NSObject, ObservableObject {
         island.begin(coreCount: coreCount)
     }
 
+    @MainActor
     func stop() {
         guard isRunning else { return }
         isRunning = false
@@ -207,7 +218,7 @@ final class HeatEngine: NSObject, ObservableObject {
             locationManager?.stopUpdatingLocation()
         }
 
-        setTorch(on: active && torchBoost)
+        Self.setTorch(on: active && torchBoost)
     }
 
     private func startScanIfPoweredOn() {
@@ -218,7 +229,9 @@ final class HeatEngine: NSObject, ObservableObject {
             options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
     }
 
-    private func setTorch(on: Bool) {
+    /// Static because `deinit` has to switch the torch off and cannot call
+    /// instance members of an isolated type; it touches no engine state anyway.
+    private static func setTorch(on: Bool) {
         guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else { return }
         // Only unlock if the lock was actually acquired, and unlock on every
         // exit path — leaving the device locked would break later torch and
@@ -316,25 +329,37 @@ final class HeatEngine: NSObject, ObservableObject {
     }
 
     @objc private func thermalChanged() {
+        // Thermal notifications arrive on an arbitrary thread. Hopping to main
+        // synchronously rather than through a `Task` keeps the safety valve
+        // prompt; `assumeIsolated` is what lets this call the main-actor-bound
+        // `stop()` as a checked fact rather than something Swift 5.9's minimal
+        // concurrency checking merely lets through.
         DispatchQueue.main.async {
-            let new = ProcessInfo.processInfo.thermalState
-            if new != self.thermalState {
-                self.bandEntered = Date()
-                // Snap into the new band rather than easing across it: while
-                // the level drifted from Hot down to Warm the bar would sit in
-                // the Hot band under a "Warm" label, which is exactly the
-                // contradiction the bands exist to prevent. The view animates
-                // the jump, so it still reads as a glide.
-                let band = Self.band(for: new)
-                self.heatLevel = min(max(self.heatLevel, band.lowerBound), band.upperBound)
+            MainActor.assumeIsolated {
+                self.applyThermalChange()
             }
-            self.thermalState = new
-            // Safety valve: if iOS reports critical heat, shut down rather
-            // than fight the system's own throttling.
-            if self.thermalState == .critical, self.isRunning {
-                self.stop()
-                self.criticalShutdown = true
-            }
+        }
+    }
+
+    @MainActor
+    private func applyThermalChange() {
+        let new = ProcessInfo.processInfo.thermalState
+        if new != thermalState {
+            bandEntered = Date()
+            // Snap into the new band rather than easing across it: while the
+            // level drifted from Hot down to Warm the bar would sit in the Hot
+            // band under a "Warm" label, which is exactly the contradiction the
+            // bands exist to prevent. The view animates the jump, so it still
+            // reads as a glide.
+            let band = Self.band(for: new)
+            heatLevel = min(max(heatLevel, band.lowerBound), band.upperBound)
+        }
+        thermalState = new
+        // Safety valve: if iOS reports critical heat, shut down rather than
+        // fight the system's own throttling.
+        if thermalState == .critical, isRunning {
+            stop()
+            criticalShutdown = true
         }
     }
 }

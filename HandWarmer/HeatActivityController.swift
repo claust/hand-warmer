@@ -10,15 +10,18 @@ import Foundation
 /// is literally this class's tick — we push a new `flamePhase` a few times a
 /// second and let SwiftUI interpolate the shapes in between.
 ///
-/// **Threading:** every entry point runs on the main thread, and all mutable
-/// state below is main-thread-only. That holds today because the callers are a
-/// SwiftUI scene phase, the engine's start/stop (driven by a tap), and a
-/// main-runloop timer, and because the request/update work is done from
-/// `@MainActor` tasks. It is an invariant rather than a guarantee the type
-/// system enforces — hence the assertions on the entry points. Making the class
-/// `@MainActor` is the real fix and is worth doing; it needs `HeatEngine`'s
-/// `deinit` untangled first, which cannot call main-actor-isolated members.
+/// **Threading:** main actor throughout. `begin` and `push` interleave an async
+/// request with a runloop timer over the same three pieces of state
+/// (`wantsActivity`, `activity`, `updateTask`), and every bug this type has had
+/// was one of them being read or written at the wrong moment. Isolation makes
+/// that structural rather than a convention to remember.
+@MainActor
 final class HeatActivityController {
+
+    /// Constructing one touches nothing isolated — every stored property has a
+    /// default — so it stays available to `HeatEngine`'s property initialiser
+    /// rather than forcing the engine to build it lazily from its own init.
+    nonisolated init() {}
 
     /// Pulled on every tick for the current readings. Set by `HeatEngine`.
     /// Returns nil once the engine is gone — `begin`'s task holds this
@@ -78,7 +81,6 @@ final class HeatActivityController {
     // stray flame lingers until the next time warming starts.
 
     func begin(coreCount: Int) {
-        MainActor.assertIsolated("HeatActivityController state is main-thread-only")
         // `wantsActivity`, not `activity`, is the guard: the request below is
         // async, so two begins in quick succession would both still see a nil
         // activity and each ask for one, leaving a duplicate flame behind.
@@ -130,7 +132,6 @@ final class HeatActivityController {
 
     /// Drives the tick rate: fast while the island is actually visible.
     func setBackgrounded(_ backgrounded: Bool) {
-        MainActor.assertIsolated("HeatActivityController state is main-thread-only")
         guard backgrounded != isBackgrounded else { return }
         isBackgrounded = backgrounded
         guard activity != nil else { return }
@@ -146,7 +147,10 @@ final class HeatActivityController {
         // .common so the tick survives a scroll or a drag on the island itself.
         ticker = Timer.publish(every: interval, on: .main, in: .common)
             .autoconnect()
-            .sink { [weak self] _ in self?.push() }
+            // Combine hands the value back with no isolation of its own, but
+            // the publisher is pinned to the main runloop, so this is the main
+            // actor in all but the compiler's eyes.
+            .sink { [weak self] _ in MainActor.assumeIsolated { self?.push() } }
     }
 
     private func push() {
