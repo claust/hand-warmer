@@ -329,11 +329,13 @@ final class HeatEngine: NSObject, ObservableObject {
     }
 
     @objc private func thermalChanged() {
-        // Thermal notifications arrive on an arbitrary thread. Hopping to main
-        // synchronously rather than through a `Task` keeps the safety valve
-        // prompt; `assumeIsolated` is what lets this call the main-actor-bound
-        // `stop()` as a checked fact rather than something Swift 5.9's minimal
-        // concurrency checking merely lets through.
+        // Thermal notifications arrive on an arbitrary thread, so the work is
+        // queued onto main either way. This goes via the main runloop rather
+        // than a `Task` to stay ordered with the rest of the engine's
+        // main-queue work — the battery refresh and the heat-level tick — not
+        // because it arrives any sooner. `assumeIsolated` is what lets it call
+        // the main-actor-bound `stop()` as a checked fact rather than something
+        // Swift 5.9's minimal concurrency checking merely lets through.
         DispatchQueue.main.async {
             MainActor.assumeIsolated {
                 self.applyThermalChange()
