@@ -25,11 +25,17 @@ final class HeatEngine: NSObject, ObservableObject {
     /// warming, so the meter always moves and never contradicts the label.
     @Published private(set) var heatLevel: Double = 0
 
-    // Boosters (CPU load is always on while running).
-    @Published var gpuBoost = false { didSet { syncBoosters() } }
-    @Published var neuralBoost = false { didSet { syncBoosters() } }
-    @Published var gpsBoost = false { didSet { syncBoosters() } }
-    @Published var bluetoothBoost = false { didSet { syncBoosters() } }
+    // Boosters (CPU load is always on while running). Everything that only
+    // heats the phone starts on — that is what the app is for. The torch is
+    // the exception: it is the one booster that is visible across a room and
+    // would surprise someone who just wanted warm hands.
+    // Seeded from support rather than a flat `true`, so a device that cannot
+    // run one of them doesn't show a chip that reads "on" while it is dimmed
+    // out and producing nothing.
+    @Published var gpuBoost = GPUBurner.isSupported { didSet { syncBoosters() } }
+    @Published var neuralBoost = NeuralBurner.isSupported { didSet { syncBoosters() } }
+    @Published var gpsBoost = true { didSet { syncBoosters() } }
+    @Published var bluetoothBoost = true { didSet { syncBoosters() } }
     @Published var torchBoost = false { didSet { syncBoosters() } }
 
     let coreCount = ProcessInfo.processInfo.activeProcessorCount
