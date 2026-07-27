@@ -5,10 +5,16 @@ struct ContentView: View {
     @State private var flameIntensity: CGFloat = 0
     @State private var showLowBatteryWarning = false
     @State private var showBoosters = false
+    @StateObject private var touches = TouchQuietMonitor()
+    /// Bumped every time a tap is refused for arriving on a busy screen; drives
+    /// the warning haptic and the explanation under the button.
+    @State private var refusals = 0
+    @State private var refusing = false
 
     var body: some View {
         ZStack {
             background
+            TouchQuietReporter(monitor: touches)
 
             VStack(spacing: 24) {
                 header
@@ -56,6 +62,10 @@ struct ContentView: View {
             withAnimation(.easeInOut(duration: running ? 2.2 : 0.8)) {
                 flameIntensity = running ? 1 : 0
             }
+            // Nothing left to explain once the session is over — the engine
+            // stops itself at the battery floor and in a critical thermal
+            // state, both of which can land mid-refusal.
+            if !running { refusing = false }
         }
         .onAppear {
             // Debug hooks so automated runs can exercise the active state.
@@ -116,40 +126,87 @@ struct ContentView: View {
             FlameView(intensity: flameIntensity)
                 .frame(width: 220, height: 240)
 
-            Button(action: toggle) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: engine.isRunning
-                                    ? [Color.orange, Color(red: 0.75, green: 0.15, blue: 0.0)]
-                                    : [
-                                        Color(red: 0.25, green: 0.3, blue: 0.4),
-                                        Color(red: 0.1, green: 0.12, blue: 0.18),
-                                    ],
-                                center: .center, startRadius: 8, endRadius: 90)
-                        )
-                        .frame(width: 150, height: 150)
-                        .shadow(color: engine.isRunning ? .orange.opacity(0.7) : .clear, radius: 35)
-                    VStack(spacing: 6) {
-                        Image(systemName: buttonIcon)
-                            .font(.system(size: 44))
-                        Text(buttonTitle)
-                            .font(.caption.weight(.heavy))
-                            .tracking(2)
-                    }
-                    .foregroundStyle(.white)
-                }
+            // While warming, the button's size *is* the guard: it shrinks to
+            // almost nothing the moment anything touches the screen and grows
+            // back over the quiet window. A palm has almost nothing to hit.
+            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !engine.isRunning)) { context in
+                let progress = engine.isRunning ? touches.quiet.progress(at: context.date) : 1
+                stopButton(labelled: progress >= 1)
+                    .scaleEffect(Self.hiddenScale + (1 - Self.hiddenScale) * progress)
             }
-            .buttonStyle(.plain)
-            // Below the floor there is nothing to start, so the button becomes
-            // a sign rather than a control.
-            .disabled(batteryCutoff)
-            .opacity(batteryCutoff ? 0.55 : 1)
-            .animation(.easeInOut(duration: 0.3), value: batteryCutoff)
-            .accessibilityLabel(batteryCutoff ? "Hand warmer unavailable, battery too low" : buttonTitle)
-            .sensoryFeedback(.impact(weight: .heavy), trigger: engine.isRunning)
+            // Reserved whatever the button is doing, so a shrinking button
+            // doesn't drag the layout around with it.
+            .frame(width: 176, height: 176)
+
+            refusalNote
         }
+    }
+
+    /// How small the button gets on a busy screen: 12% of full size.
+    private static let hiddenScale: CGFloat = 0.12
+
+    /// - Parameter labelled: whether the icon and STOP caption are shown. They
+    ///   arrive only once the button is back at full size, so the label is a
+    ///   statement that the tap will be taken — not decoration on a button that
+    ///   would refuse it. Shrunk, they would be an illegible smudge anyway.
+    private func stopButton(labelled: Bool) -> some View {
+        Button(action: toggle) {
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: engine.isRunning
+                                ? [Color.orange, Color(red: 0.75, green: 0.15, blue: 0.0)]
+                                : [
+                                    Color(red: 0.25, green: 0.3, blue: 0.4),
+                                    Color(red: 0.1, green: 0.12, blue: 0.18),
+                                ],
+                            center: .center, startRadius: 8, endRadius: 90)
+                    )
+                    .frame(width: 150, height: 150)
+                    .shadow(color: engine.isRunning ? .orange.opacity(0.7) : .clear, radius: 35)
+
+                VStack(spacing: 6) {
+                    Image(systemName: buttonIcon)
+                        .font(.system(size: 44))
+                    Text(buttonTitle)
+                        .font(.caption.weight(.heavy))
+                        .tracking(2)
+                }
+                .foregroundStyle(.white)
+                .opacity(labelled ? 1 : 0)
+                .scaleEffect(labelled ? 1 : 0.55)
+                .blur(radius: labelled ? 0 : 6)
+                .animation(.spring(response: 0.4, dampingFraction: 0.7), value: labelled)
+            }
+        }
+        .buttonStyle(.plain)
+        // A refused tap is worth a flinch: it says the button felt the tap and
+        // turned it down, rather than missing it.
+        .modifier(Wobble(trigger: refusals))
+        // Below the floor there is nothing to start, so the button becomes a
+        // sign rather than a control.
+        .disabled(batteryCutoff)
+        .opacity(batteryCutoff ? 0.55 : 1)
+        .animation(.easeInOut(duration: 0.3), value: batteryCutoff)
+        .accessibilityLabel(accessibilityLabel)
+        .sensoryFeedback(.impact(weight: .heavy), trigger: engine.isRunning)
+        .sensoryFeedback(.warning, trigger: refusals)
+        .task(id: refusals) { await explainRefusal() }
+    }
+
+    /// Sits under the button in space that is always reserved, so the layout
+    /// doesn't jump when a refusal appears.
+    private var refusalNote: some View {
+        Text("Screen must be still for \(Int(TouchQuiet.required))s before STOP works")
+            .font(.footnote.weight(.semibold))
+            .multilineTextAlignment(.center)
+            .foregroundStyle(.orange)
+            .opacity(refusing ? 1 : 0)
+            .animation(.easeInOut(duration: 0.25), value: refusing)
+            .frame(height: 40)
+            .padding(.horizontal)
+            .accessibilityHidden(!refusing)
     }
 
     /// The only thing left where the chip grid used to be. It carries the
@@ -210,8 +267,19 @@ struct ContentView: View {
         return engine.isRunning ? "STOP" : "WARM ME"
     }
 
+    private var accessibilityLabel: String {
+        if batteryCutoff { return "Hand warmer unavailable, battery too low" }
+        return buttonTitle
+    }
+
     private func toggle() {
         if engine.isRunning {
+            // The guard is only on stopping. Starting by accident costs a tap
+            // to undo; stopping by accident costs all the heat in the phone.
+            guard touches.wasArmedAtLatestTouchDown else {
+                refusals += 1
+                return
+            }
             engine.stop()
         } else if batteryCutoff {
             // Belt and braces: the button is disabled, but -autostart calls
@@ -226,6 +294,17 @@ struct ContentView: View {
 
     private func activate() {
         engine.start()
+    }
+
+    /// Shows the explanation for a few seconds after a refused tap. Keyed on
+    /// the count, so a second refusal restarts the clock rather than letting
+    /// the first one's timer clear a message that has just been re-shown.
+    private func explainRefusal() async {
+        guard refusals > 0 else { return }
+        refusing = true
+        try? await Task.sleep(for: .seconds(3))
+        guard !Task.isCancelled else { return }
+        refusing = false
     }
 
     private func applyBoosterOverrides() {
