@@ -129,10 +129,23 @@ works in the simulator, but actual heating (and battery/thermal readouts)
 requires a real device — the simulator borrows your Mac's CPU and reports no
 battery.
 
-If you are not the owner of this repo, change `bundleIdPrefix` in
-`project.yml` to something under your own team before running `xcodegen
-generate`. Automatic signing has to register the App ID under your team, and
-`dk.delectosoft.handwarmer` already belongs to someone else.
+If you are not the owner of this repo, you need your own bundle identifiers
+before running `xcodegen generate` — automatic signing has to register the App
+ID under your team, and `dk.delectosoft.handwarmer` already belongs to someone
+else. Both are set explicitly in `project.yml`, so changing `bundleIdPrefix`
+alone will not do it; edit the two `PRODUCT_BUNDLE_IDENTIFIER` values:
+
+| Target | Setting |
+| --- | --- |
+| `HandWarmer` | `dk.delectosoft.handwarmer` |
+| `HandWarmerWidget` | `dk.delectosoft.handwarmer.widget` |
+
+The extension's identifier must stay prefixed by the app's, or iOS refuses to
+install the bundle. Two more places carry the app's identifier by convention:
+`IOS_BUNDLE_ID` in the `Makefile`, which is what `make ios-run` and
+`ios-deploy` launch, and the `os_log` subsystem in `HandWarmer/Log.swift`,
+along with the `log stream --predicate` line documented above it. Neither
+breaks the build if you leave it alone.
 
 Launch with the `-autostart` argument to start the warmer automatically
 (used for automated UI verification).
