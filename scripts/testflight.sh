@@ -93,25 +93,27 @@ need() {
 	fi
 }
 
-if [ "$MODE" != archive ]; then
-	need ASC_KEY_ID
-	need ASC_ISSUER_ID
-fi
+# Required in every mode, --archive included. Archiving signs for distribution
+# via -allowProvisioningUpdates, which needs the key to register bundle ids and
+# mint the certificate and profiles — without it xcodebuild fails much later
+# with "No Accounts: Add a new account in Accounts settings" and "No profiles
+# for '<bundle id>' were found", which sends you looking at Xcode rather than at
+# the credential that is actually missing.
+need ASC_KEY_ID
+need ASC_ISSUER_ID
 
 KEY_PATH=""
-if [ -n "${ASC_KEY_ID:-}" ]; then
-	for dir in "$ROOT/private_keys" "$HOME/private_keys" "$HOME/.private_keys" \
-		"$HOME/.appstoreconnect/private_keys"; do
-		if [ -f "$dir/AuthKey_$ASC_KEY_ID.p8" ]; then
-			KEY_PATH="$dir/AuthKey_$ASC_KEY_ID.p8"
-			break
-		fi
-	done
-	if [ -z "$KEY_PATH" ] && [ "$MODE" != archive ]; then
-		echo "Could not find AuthKey_$ASC_KEY_ID.p8 in ~/.private_keys (or ./private_keys)." >&2
-		echo "Download it from App Store Connect → Users and Access → Integrations." >&2
-		exit 1
+for dir in "$ROOT/private_keys" "$HOME/private_keys" "$HOME/.private_keys" \
+	"$HOME/.appstoreconnect/private_keys"; do
+	if [ -f "$dir/AuthKey_$ASC_KEY_ID.p8" ]; then
+		KEY_PATH="$dir/AuthKey_$ASC_KEY_ID.p8"
+		break
 	fi
+done
+if [ -z "$KEY_PATH" ]; then
+	echo "Could not find AuthKey_$ASC_KEY_ID.p8 in ~/.private_keys (or ./private_keys)." >&2
+	echo "Download it from App Store Connect → Users and Access → Integrations." >&2
+	exit 1
 fi
 
 # --- build -------------------------------------------------------------------
@@ -129,12 +131,9 @@ mkdir -p "$ARCHIVE_DIR"
 # register the two bundle IDs (app + widget extension) and mint the distribution
 # profiles the first time through, so nothing has to be clicked in the portal.
 # It needs the API key to do that, hence the -authenticationKey* flags.
-AUTH=()
-if [ -n "$KEY_PATH" ]; then
-	AUTH=(-authenticationKeyPath "$KEY_PATH"
-		-authenticationKeyID "$ASC_KEY_ID"
-		-authenticationKeyIssuerID "$ASC_ISSUER_ID")
-fi
+AUTH=(-authenticationKeyPath "$KEY_PATH"
+	-authenticationKeyID "$ASC_KEY_ID"
+	-authenticationKeyIssuerID "$ASC_ISSUER_ID")
 
 echo "==> Archiving $SCHEME (build $BUILD_NUMBER)"
 set -o pipefail
@@ -145,7 +144,7 @@ xcodebuild archive \
 	-destination 'generic/platform=iOS' \
 	-archivePath "$ARCHIVE" \
 	-allowProvisioningUpdates \
-	${AUTH[@]+"${AUTH[@]}"} \
+	"${AUTH[@]}" \
 	DEVELOPMENT_TEAM="$TEAM" \
 	CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
 	| $BEAUTIFY
@@ -179,7 +178,7 @@ xcodebuild -exportArchive \
 	-exportPath "$ARCHIVE_DIR" \
 	-exportOptionsPlist "$ARCHIVE_DIR/ExportOptions.plist" \
 	-allowProvisioningUpdates \
-	${AUTH[@]+"${AUTH[@]}"} \
+	"${AUTH[@]}" \
 	| $BEAUTIFY
 
 IPA="$(find "$ARCHIVE_DIR" -maxdepth 1 -name '*.ipa' | head -1)"

@@ -221,8 +221,13 @@ a multi-line PEM file; the workflow decodes it back onto the runner's disk,
 where `altool` and `xcodebuild` expect to find it by key id. Set all three with:
 
 ```bash
-base64 -i ~/.private_keys/AuthKey_<KEYID>.p8 | tr -d '\n' | gh secret set ASC_KEY_P8
+openssl base64 -A -in ~/.private_keys/AuthKey_<KEYID>.p8 | gh secret set ASC_KEY_P8
 ```
+
+(`openssl` rather than `base64`, whose flags differ between BSD and GNU — `-i`
+means "input file" on macOS and "ignore garbage" on Linux, so the obvious
+command silently does the wrong thing on the other platform. `-A` keeps the
+output on one line, which is what a secret wants.)
 
 Environment wins over `.testflight.env`, so the secrets are used even if a
 stale local file is somehow present in the checkout.

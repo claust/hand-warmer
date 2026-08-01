@@ -88,9 +88,14 @@ jobs:
           BUILD_NUMBER: ${{ inputs.build_number }}
         run: ./scripts/testflight.sh
 
+      # Only the file this job wrote. GitHub-hosted runners are torn down
+      # anyway, but a self-hosted runner may hold other keys in this directory
+      # and removing the whole thing would take them with it.
       - name: Remove API key
         if: ${{ always() }}
-        run: rm -rf ~/.private_keys
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        run: rm -f ~/.private_keys/"AuthKey_$ASC_KEY_ID.p8"
 
       # The archive carries the dSYMs, which are the only way to symbolicate a
       # crash report from this build once the runner is gone.
