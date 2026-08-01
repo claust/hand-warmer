@@ -117,3 +117,7 @@ schemes:
         - HandWarmerTests
     run:
       config: Debug
+    # Named explicitly so `xcodebuild archive` from scripts/testflight.sh picks
+    # the Release configuration rather than whatever the default action infers.
+    archive:
+      config: Release

@@ -137,6 +137,54 @@ generate`. Automatic signing has to register the App ID under your team, and
 Launch with the `-autostart` argument to start the warmer automatically
 (used for automated UI verification).
 
+## TestFlight
+
+`make ios-deploy` is for the edit-build-look loop, not for keeping the app on a
+phone: it signs with a *development* provisioning profile, and when that profile
+expires iOS stops launching the app ("Hand Warmer is no longer available"). A
+TestFlight build is signed for distribution, lasts 90 days, and is replaced by
+uploading again — so this is the way to actually carry the app around.
+
+```bash
+make testflight           # archive → export → validate → upload
+make testflight-validate  # same, minus the upload (checks signing + App Review's automated checks)
+make ios-archive          # just produce build-archive/HandWarmer.ipa
+```
+
+The build number is the git commit count, so it climbs on its own — App Store
+Connect refuses a `CFBundleVersion` it has already seen. Override with
+`BUILD_NUMBER=<n>` when uploading from a branch whose count has drifted below
+what is already up there. `MARKETING_VERSION` in `project.yml` stays hand-owned.
+
+### One-time setup
+
+1. **Create an App Store Connect API key.** *Users and Access → Integrations →
+   App Store Connect API → Team Keys*, role **App Manager**. Note the Key ID and
+   the Issuer ID, and download the `AuthKey_<KEYID>.p8` — Apple serves it once.
+2. **Put the key where the tools look:**
+   ```bash
+   mkdir -p ~/.private_keys && mv ~/Downloads/AuthKey_*.p8 ~/.private_keys/
+   ```
+3. **Name it in `.testflight.env`** (gitignored; copy `.testflight.env.example`):
+   ```
+   ASC_KEY_ID=XXXXXXXXXX
+   ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+   ```
+4. **Create the app record** in App Store Connect: *Apps → + → New App*,
+   platform iOS, bundle ID `com.claus.HandWarmer`, any SKU. The record cannot be
+   created from the command line, and the upload fails without it. Only the
+   bundle IDs — app and widget extension — are registered automatically, by
+   `xcodebuild -allowProvisioningUpdates`.
+5. **Add yourself as an internal tester** under *TestFlight → Internal Testing*,
+   then install [TestFlight](https://apps.apple.com/app/testflight/id899247664)
+   on the phone. Internal builds skip Beta App Review and appear within minutes
+   of processing.
+
+Keep it to internal testing. Two things in this app — the silent audio session
+held purely to stay alive in the background, and the premise of deliberately
+overheating the device — are the kind of thing Beta App Review asks about for
+external testers, and would very likely be rejected for the App Store proper.
+
 ## Tests & lint
 
 ```bash
