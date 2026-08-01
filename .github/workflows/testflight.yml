@@ -65,8 +65,21 @@ jobs:
             exit 1
           fi
           mkdir -p ~/.private_keys && chmod 700 ~/.private_keys
-          printf '%s' "$ASC_KEY_P8" | base64 --decode > ~/.private_keys/"AuthKey_$ASC_KEY_ID.p8"
+          # openssl rather than base64(1): the decode flag is spelled -D on
+          # older macOS, -d/--decode on newer and on GNU, and this job pins a
+          # runner image whose version of the tool we do not control. Stripping
+          # whitespace first means the secret works whether it was stored as one
+          # line or wrapped.
+          printf '%s' "$ASC_KEY_P8" | tr -d '[:space:]' \
+            | openssl base64 -d -A > ~/.private_keys/"AuthKey_$ASC_KEY_ID.p8"
           chmod 600 ~/.private_keys/"AuthKey_$ASC_KEY_ID.p8"
+          # A silently truncated or mis-encoded key otherwise surfaces much
+          # later as an authentication failure that reads like bad credentials.
+          openssl pkey -in ~/.private_keys/"AuthKey_$ASC_KEY_ID.p8" \
+            -noout 2>/dev/null || {
+            echo "::error::ASC_KEY_P8 did not decode to a valid PKCS#8 private key."
+            exit 1
+          }
 
       - name: Archive, validate & upload
         env:
