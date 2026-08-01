@@ -51,6 +51,20 @@ PROJECT="${IOS_PROJECT:-HandWarmer.xcodeproj}"
 TEAM="${IOS_TEAM:-RS2FKJW2W4}"
 ARCHIVE_DIR="${IOS_ARCHIVE_DIR:-build-archive}"
 
+# This directory is wiped with `rm -rf` further down, so refuse anything that
+# could resolve outside the repo or at the repo root itself. It is a
+# convenience knob rather than untrusted input, but that is exactly the kind of
+# variable that ends up holding a mistyped absolute path one day — and the cost
+# of being wrong here is somebody's home directory, not a failed build.
+case "$ARCHIVE_DIR" in
+	'' | '.' | '..' | /* | ~*)
+		echo "IOS_ARCHIVE_DIR must be a relative path below the repo root; got '$ARCHIVE_DIR'." >&2
+		exit 2 ;;
+	*/../* | ../* | */..)
+		echo "IOS_ARCHIVE_DIR must not escape the repo root; got '$ARCHIVE_DIR'." >&2
+		exit 2 ;;
+esac
+
 # CFBundleVersion has to increase with every upload or App Store Connect rejects
 # the build as a duplicate. The commit count is monotonic on master and needs no
 # state outside git, so it beats a hand-bumped number in project.yml. Override
@@ -68,11 +82,13 @@ esac
 # --- API key -----------------------------------------------------------------
 # altool and xcodebuild both authenticate with an App Store Connect API key: an
 # issuer UUID, a key ID, and the .p8 private key that Apple lets you download
-# exactly once. Everything but the .p8 itself lives in .testflight.env; the .p8
-# goes in ~/.private_keys, which is where altool looks by default.
+# exactly once. Locally those ids come from .testflight.env; in CI they arrive
+# as repository secrets in the environment. The .p8 itself goes in
+# ~/.private_keys, which is where altool looks by default.
 need() {
 	if [ -z "${!1:-}" ]; then
-		echo "Missing $1. Set it in .testflight.env — see README.md § TestFlight." >&2
+		echo "Missing $1. Set it in the environment (CI: repository secrets) or" >&2
+		echo "in .testflight.env locally — see README.md § TestFlight." >&2
 		exit 1
 	fi
 }
