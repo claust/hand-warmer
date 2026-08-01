@@ -27,8 +27,22 @@ ROOT="$PWD"
 # outright would do the opposite and silently override the secrets.
 if [ -f "$ROOT/.testflight.env" ]; then
 	while IFS='=' read -r key value; do
-		case "$key" in ''|\#*) continue ;; esac
-		[ -z "$(eval "printf '%s' \"\${$key:-}\"")" ] && export "$key=$value"
+		# Skip blanks and comments, then anything that is not a plain shell
+		# identifier. The file is hand-edited, so a stray line should be
+		# ignored rather than turned into an assignment — and refusing to
+		# expand arbitrary names keeps the lookup below from being a way to
+		# smuggle in shell.
+		case "$key" in
+			'' | \#*) continue ;;
+			[!A-Za-z_]* | *[!A-Za-z0-9_]*) continue ;;
+		esac
+		# A file saved with CRLF line endings would otherwise carry the \r
+		# into the value, and a key id with a trailing carriage return fails
+		# authentication in a way that reads as "wrong credentials".
+		value=${value%$'\r'}
+		# Indirect expansion rather than eval: same "is it already set?"
+		# question, no shell constructed from file contents.
+		[ -z "${!key:-}" ] && export "$key=$value"
 	done < "$ROOT/.testflight.env"
 fi
 

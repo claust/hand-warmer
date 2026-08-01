@@ -191,6 +191,42 @@ held purely to stay alive in the background, and the premise of deliberately
 overheating the device — are the kind of thing Beta App Review asks about for
 external testers, and would very likely be rejected for the App Store proper.
 
+### Releasing from CI
+
+[`.github/workflows/testflight.yml`](.github/workflows/testflight.yml) runs the
+same script on a macOS runner, so a release does not depend on sitting at one
+particular Mac:
+
+```bash
+gh workflow run testflight.yml --ref master
+```
+
+It is `workflow_dispatch` only — a release is something you decide to do, not a
+side effect of pushing. Note that GitHub only exposes a `workflow_dispatch`
+workflow once the file is on the **default branch**; until then the trigger
+404s, whatever branch you point `--ref` at. The `ref` input then picks what to
+build, and `build_number` overrides the commit count.
+
+It needs the same credentials as a local run, as three repository secrets
+(*Settings → Secrets and variables → Actions*):
+
+| Secret | Value |
+| --- | --- |
+| `ASC_KEY_ID` | the Key ID, same as in `.testflight.env` |
+| `ASC_ISSUER_ID` | the Issuer ID, same as in `.testflight.env` |
+| `ASC_KEY_P8` | the **base64-encoded contents** of `AuthKey_<KEYID>.p8` |
+
+`ASC_KEY_P8` is base64 because a secret is a single-line string and the `.p8` is
+a multi-line PEM file; the workflow decodes it back onto the runner's disk,
+where `altool` and `xcodebuild` expect to find it by key id. Set all three with:
+
+```bash
+base64 -i ~/.private_keys/AuthKey_<KEYID>.p8 | tr -d '\n' | gh secret set ASC_KEY_P8
+```
+
+Environment wins over `.testflight.env`, so the secrets are used even if a
+stale local file is somehow present in the checkout.
+
 ## Tests & lint
 
 ```bash
