@@ -27,19 +27,26 @@ ROOT="$PWD"
 # outright would do the opposite and silently override the secrets.
 if [ -f "$ROOT/.testflight.env" ]; then
 	while IFS='=' read -r key value; do
-		# Skip blanks and comments, then anything that is not a plain shell
-		# identifier. The file is hand-edited, so a stray line should be
-		# ignored rather than turned into an assignment — and refusing to
-		# expand arbitrary names keeps the lookup below from being a way to
-		# smuggle in shell.
+		# Trim both sides of both halves first. The file is hand-edited, and
+		# `ASC_KEY_ID = X` or an indented line is the natural thing to write —
+		# untrimmed, the key fails the identifier test below and the line is
+		# skipped in silence, leaving the script to report the variable as
+		# missing while it sits in the file in plain sight.
+		key=${key#"${key%%[![:space:]]*}"}
+		key=${key%"${key##*[![:space:]]}"}
+		value=${value#"${value%%[![:space:]]*}"}
+		# Trailing whitespace goes the same way, which also covers the \r of a
+		# CRLF-saved file — a key id carrying one fails authentication in a way
+		# that reads as "wrong credentials" rather than "bad file".
+		value=${value%"${value##*[![:space:]]}"}
+		# Then skip blanks and comments, and anything that is not a plain shell
+		# identifier: a stray line should be ignored rather than turned into an
+		# assignment, and refusing to expand arbitrary names keeps the lookup
+		# below from being a way to smuggle in shell.
 		case "$key" in
 			'' | \#*) continue ;;
 			[!A-Za-z_]* | *[!A-Za-z0-9_]*) continue ;;
 		esac
-		# A file saved with CRLF line endings would otherwise carry the \r
-		# into the value, and a key id with a trailing carriage return fails
-		# authentication in a way that reads as "wrong credentials".
-		value=${value%$'\r'}
 		# Indirect expansion rather than eval: same "is it already set?"
 		# question, no shell constructed from file contents.
 		[ -z "${!key:-}" ] && export "$key=$value"
