@@ -59,9 +59,18 @@ jobs:
         env:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
-          if [ -z "$ASC_KEY_P8" ] || [ -z "$ASC_KEY_ID" ]; then
-            echo "::error::ASC_KEY_P8 / ASC_KEY_ID secrets are not set. See README.md § TestFlight."
+          # All three up front, naming the ones that are actually missing.
+          # ASC_ISSUER_ID is not used until this job's last step, so leaving it
+          # out here would spend the Xcode selection and a brew install before
+          # failing on a typo in a secret name.
+          missing=
+          for var in ASC_KEY_P8 ASC_KEY_ID ASC_ISSUER_ID; do
+            [ -n "${!var}" ] || missing="$missing $var"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing. See README.md § TestFlight."
             exit 1
           fi
           mkdir -p ~/.private_keys && chmod 700 ~/.private_keys
