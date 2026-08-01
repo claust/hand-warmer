@@ -128,7 +128,9 @@ schemes:
         - HandWarmerTests
     run:
       config: Debug
-    # Named explicitly so `xcodebuild archive` from scripts/testflight.sh picks
-    # the Release configuration rather than whatever the default action infers.
+    # Not what makes scripts/testflight.sh build Release — that passes
+    # -configuration Release explicitly. This pins the scheme's own archive
+    # action, so Xcode's Product ▸ Archive and a bare `xcodebuild archive`
+    # agree with the script instead of quietly producing a Debug build.
     archive:
       config: Release
