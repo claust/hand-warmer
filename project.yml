@@ -1,6 +1,6 @@
 name: HandWarmer
 options:
-  bundleIdPrefix: com.claus
+  bundleIdPrefix: dk.delectosoft
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
@@ -25,6 +25,11 @@ targets:
         embed: true
     settings:
       base:
+        # Spelled out rather than left to bundleIdPrefix + target name, which
+        # would capitalise it as dk.delectosoft.HandWarmer. Lowercase matches
+        # the other apps on this team, and a bundle ID cannot be renamed once
+        # App Store Connect has an app record for it.
+        PRODUCT_BUNDLE_IDENTIFIER: dk.delectosoft.handwarmer
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1"
         INFOPLIST_KEY_UIUserInterfaceStyle: Dark
@@ -40,6 +45,12 @@ targets:
         # Present but empty: opts into the modern launch-screen system (and
         # full-size rendering on every device) using the default background.
         UILaunchScreen: {}
+        # Answers App Store Connect's export-compliance question in the bundle
+        # rather than by hand per upload — without it every build lands in
+        # TestFlight as "Missing Compliance" and cannot be distributed until
+        # someone clicks through. False is the accurate answer: the app makes no
+        # network connections and uses no encryption of its own.
+        ITSAppUsesNonExemptEncryption: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         # Puts the running session in the Dynamic Island and on the Lock Screen.
@@ -76,7 +87,7 @@ targets:
       - HandWarmer/Shared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.claus.HandWarmer.Widget
+        PRODUCT_BUNDLE_IDENTIFIER: dk.delectosoft.handwarmer.widget
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1"
         INFOPLIST_KEY_UIUserInterfaceStyle: Dark
@@ -117,3 +128,9 @@ schemes:
         - HandWarmerTests
     run:
       config: Debug
+    # Not what makes scripts/testflight.sh build Release — that passes
+    # -configuration Release explicitly. This pins the scheme's own archive
+    # action, so Xcode's Product ▸ Archive and a bare `xcodebuild archive`
+    # agree with the script instead of quietly producing a Debug build.
+    archive:
+      config: Release

@@ -129,13 +129,121 @@ works in the simulator, but actual heating (and battery/thermal readouts)
 requires a real device — the simulator borrows your Mac's CPU and reports no
 battery.
 
-If you are not the owner of this repo, change `bundleIdPrefix` in
-`project.yml` to something under your own team before running `xcodegen
-generate`. Automatic signing has to register the App ID under your team, and
-`com.claus.HandWarmer` already belongs to someone else.
+If you are not the owner of this repo, you need your own bundle identifiers
+before running `xcodegen generate` — automatic signing has to register the App
+ID under your team, and `dk.delectosoft.handwarmer` already belongs to someone
+else. Both are set explicitly in `project.yml`, so changing `bundleIdPrefix`
+alone will not do it; edit the two `PRODUCT_BUNDLE_IDENTIFIER` values:
+
+| Target | Setting |
+| --- | --- |
+| `HandWarmer` | `dk.delectosoft.handwarmer` |
+| `HandWarmerWidget` | `dk.delectosoft.handwarmer.widget` |
+
+The extension's identifier must stay prefixed by the app's, or iOS refuses to
+install the bundle. Two more places carry the app's identifier by convention:
+`IOS_BUNDLE_ID` in the `Makefile`, which is what `make ios-run` and
+`ios-deploy` launch, and the `os_log` subsystem in `HandWarmer/Log.swift`,
+along with the `log stream --predicate` line documented above it. Neither
+breaks the build if you leave it alone.
 
 Launch with the `-autostart` argument to start the warmer automatically
 (used for automated UI verification).
+
+## TestFlight
+
+`make ios-deploy` is for the edit-build-look loop, not for keeping the app on a
+phone: it signs with a *development* provisioning profile, and when that profile
+expires iOS stops launching the app ("Hand Warmer is no longer available"). A
+TestFlight build is signed for distribution, lasts 90 days, and is replaced by
+uploading again — so this is the way to actually carry the app around.
+
+```bash
+make testflight           # archive → export → validate → upload
+make testflight-validate  # same, minus the upload (checks signing + App Review's automated checks)
+make ios-archive          # just produce build-archive/HandWarmer.ipa
+```
+
+The build number is the git commit count, so it climbs on its own — App Store
+Connect refuses a `CFBundleVersion` it has already seen. Override with
+`BUILD_NUMBER=<n>` when uploading from a branch whose count has drifted below
+what is already up there. `MARKETING_VERSION` in `project.yml` stays hand-owned.
+
+### One-time setup
+
+1. **Create an App Store Connect API key.** *Users and Access → Integrations →
+   App Store Connect API → Team Keys*, role **Admin**. Note the Key ID and the
+   Issuer ID, and download the `AuthKey_<KEYID>.p8` — Apple serves it once.
+
+   Admin, not App Manager: cloud signing has to mint an *Apple Distribution*
+   certificate, and only Admin and Account Holder may create one. An App Manager
+   key archives fine and then fails the export with `Cloud signing permission
+   error` / `No profiles for '<bundle id>' were found`. A key's role cannot be
+   changed after it is generated, so getting this wrong means making a new key.
+2. **Put the key where the tools look:**
+   ```bash
+   mkdir -p ~/.private_keys && mv ~/Downloads/AuthKey_*.p8 ~/.private_keys/
+   ```
+3. **Name it in `.testflight.env`** (gitignored; copy `.testflight.env.example`):
+   ```
+   ASC_KEY_ID=XXXXXXXXXX
+   ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+   ```
+4. **Create the app record** in App Store Connect: *Apps → + → New App*,
+   platform iOS, bundle ID `dk.delectosoft.handwarmer`, any SKU. The record cannot be
+   created from the command line, and the upload fails without it. Only the
+   bundle IDs — app and widget extension — are registered automatically, by
+   `xcodebuild -allowProvisioningUpdates`.
+5. **Add yourself as an internal tester** under *TestFlight → Internal Testing*,
+   then install [TestFlight](https://apps.apple.com/app/testflight/id899247664)
+   on the phone. Internal builds skip Beta App Review and appear within minutes
+   of processing.
+
+Keep it to internal testing. Two things in this app — the silent audio session
+held purely to stay alive in the background, and the premise of deliberately
+overheating the device — are the kind of thing Beta App Review asks about for
+external testers, and would very likely be rejected for the App Store proper.
+
+### Releasing from CI
+
+[`.github/workflows/testflight.yml`](.github/workflows/testflight.yml) runs the
+same script on a macOS runner, so a release does not depend on sitting at one
+particular Mac:
+
+```bash
+gh workflow run testflight.yml --ref master
+```
+
+It is `workflow_dispatch` only — a release is something you decide to do, not a
+side effect of pushing. Note that GitHub only exposes a `workflow_dispatch`
+workflow once the file is on the **default branch**; until then the trigger
+404s, whatever branch you point `--ref` at. The `ref` input then picks what to
+build, and `build_number` overrides the commit count.
+
+It needs the same credentials as a local run, as three repository secrets
+(*Settings → Secrets and variables → Actions*):
+
+| Secret | Value |
+| --- | --- |
+| `ASC_KEY_ID` | the Key ID, same as in `.testflight.env` |
+| `ASC_ISSUER_ID` | the Issuer ID, same as in `.testflight.env` |
+| `ASC_KEY_P8` | the **base64-encoded contents** of `AuthKey_<KEYID>.p8` |
+
+`ASC_KEY_P8` is base64 because a secret is a single-line string and the `.p8` is
+a multi-line PEM file; the workflow decodes it back onto the runner's disk,
+where `altool` and `xcodebuild` expect to find it by key id. Set all three with:
+
+```bash
+openssl base64 -A -in ~/.private_keys/AuthKey_<KEYID>.p8 | gh secret set ASC_KEY_P8
+```
+
+(`openssl` rather than `base64`, whose flags differ between BSD and GNU — `-i`
+means "input file" on macOS and "ignore garbage" on Linux, so the obvious
+command silently does the wrong thing on the other platform. `-A` keeps the
+output on one line, which is what a secret wants.)
+
+Environment wins over `.testflight.env`, so the secrets are used even if a
+stale local file is somehow present in the checkout.
 
 ## Tests & lint
 

@@ -1,0 +1,120 @@
+name: TestFlight release
+
+# Deliberately manual. A TestFlight upload is a thing you decide to do, not a
+# side effect of pushing: macOS runners bill at 10x the Linux rate, every
+# upload burns a build number App Store Connect will never accept twice, and
+# builds expire after 90 days whether or not anyone installed them.
+#
+# Trigger from the Actions tab, or:
+#   gh workflow run testflight.yml --ref master
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or tag to release from
+        required: false
+        default: master
+      build_number:
+        description: >-
+          Override CFBundleVersion. Leave empty to use the commit count, which
+          is what you want unless a previous upload already claimed that number.
+        required: false
+
+# One release at a time. Two concurrent uploads would race for the same commit
+# count and the loser would be rejected as a duplicate build number.
+concurrency:
+  group: testflight
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Archive & upload
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+          # The build number is `git rev-list --count HEAD`, which a shallow
+          # clone would undercount — and an undercount is an upload rejected
+          # for reusing a build number App Store Connect has already seen.
+          fetch-depth: 0
+
+      - name: Select Xcode 26
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '~> 26.0'
+
+      - name: Install tooling (XcodeGen + xcbeautify)
+        run: brew install xcodegen xcbeautify
+
+      # altool and xcodebuild both look for the key on disk, by key id, in one
+      # of a few fixed directories — there is no flag to pass it inline. The
+      # runner is torn down after the job, but the file is still removed in a
+      # step that runs even on failure.
+      - name: Install App Store Connect API key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          # All three up front, naming the ones that are actually missing.
+          # ASC_ISSUER_ID is not used until this job's last step, so leaving it
+          # out here would spend the Xcode selection and a brew install before
+          # failing on a typo in a secret name.
+          missing=
+          for var in ASC_KEY_P8 ASC_KEY_ID ASC_ISSUER_ID; do
+            [ -n "${!var}" ] || missing="$missing $var"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing. See README.md § TestFlight."
+            exit 1
+          fi
+          mkdir -p ~/.private_keys && chmod 700 ~/.private_keys
+          # openssl rather than base64(1): the decode flag is spelled -D on
+          # older macOS, -d/--decode on newer and on GNU, and this job pins a
+          # runner image whose version of the tool we do not control. Stripping
+          # whitespace first means the secret works whether it was stored as one
+          # line or wrapped.
+          printf '%s' "$ASC_KEY_P8" | tr -d '[:space:]' \
+            | openssl base64 -d -A > ~/.private_keys/"AuthKey_$ASC_KEY_ID.p8"
+          chmod 600 ~/.private_keys/"AuthKey_$ASC_KEY_ID.p8"
+          # A silently truncated or mis-encoded key otherwise surfaces much
+          # later as an authentication failure that reads like bad credentials.
+          openssl pkey -in ~/.private_keys/"AuthKey_$ASC_KEY_ID.p8" \
+            -noout 2>/dev/null || {
+            echo "::error::ASC_KEY_P8 did not decode to a valid PKCS#8 private key."
+            exit 1
+          }
+
+      - name: Archive, validate & upload
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+        run: ./scripts/testflight.sh
+
+      # Only the file this job wrote. GitHub-hosted runners are torn down
+      # anyway, but a self-hosted runner may hold other keys in this directory
+      # and removing the whole thing would take them with it.
+      - name: Remove API key
+        if: ${{ always() }}
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        run: rm -f ~/.private_keys/"AuthKey_$ASC_KEY_ID.p8"
+
+      # The archive carries the dSYMs, which are the only way to symbolicate a
+      # crash report from this build once the runner is gone.
+      - name: Upload archive artifacts
+        uses: actions/upload-artifact@v7
+        if: ${{ always() }}
+        with:
+          name: testflight-archive
+          path: |
+            build-archive/*.ipa
+            build-archive/**/*.dSYM
+          retention-days: 14
+          if-no-files-found: warn

@@ -6,13 +6,14 @@
 #   make ios-deploy IOS_DEVICE=<name-or-udid>
 
 .PHONY: ios-generate ios-build ios-test ios-run ios-deploy ios-screenshot \
+	testflight testflight-validate ios-archive \
 	format-ios lint-ios check-ios clean
 
 IOS_SCHEME     = HandWarmer
 # Built product name (<IOS_APP_NAME>.app). Keep it in sync with IOS_SCHEME's
 # target PRODUCT_NAME if you override the scheme.
 IOS_APP_NAME   = HandWarmer
-IOS_BUNDLE_ID  = com.claus.HandWarmer
+IOS_BUNDLE_ID  = dk.delectosoft.handwarmer
 IOS_PROJECT    = HandWarmer.xcodeproj
 IOS_SIMULATOR ?= iPhone 17 Pro
 # Simulator destination shared by ios-build and ios-test (and by CI, which
@@ -84,6 +85,26 @@ ios-deploy: ios-generate
 		"$(IOS_DERIVED_DEVICE)/Build/Products/Debug-iphoneos/$(IOS_APP_NAME).app" && \
 	xcrun devicectl device process launch --device "$$DEVICE" "$(IOS_BUNDLE_ID)"
 
+# Archive for the App Store and upload to TestFlight. Prefer this over
+# ios-deploy for anything you want to keep using: a development build stops
+# launching when its provisioning profile expires, a TestFlight build lasts 90
+# days and is replaced by simply uploading again.
+#
+# One-time setup (App Store Connect API key + app record) is in README.md.
+# The build number comes from the commit count; override with BUILD_NUMBER=<n>.
+testflight:
+	@./scripts/testflight.sh
+
+# Same pipeline, stopping at App Store Connect's validation — use it to check a
+# change signs and passes the automated checks without burning a build number.
+testflight-validate:
+	@./scripts/testflight.sh --validate
+
+# Just produce the signed .ipa in build-archive/, without uploading it. Still
+# needs the distribution signing assets, so run it after the one-time setup.
+ios-archive:
+	@./scripts/testflight.sh --archive
+
 # Screenshot a connected device or a booted Simulator, whichever is available
 # (a connected device must be unlocked). When several targets are available the
 # script lists them and exits rather than guessing; pick one with:
@@ -125,4 +146,4 @@ check-ios: lint-ios
 	fi
 
 clean:
-	rm -rf "$(IOS_DERIVED)" "$(IOS_DERIVED_DEVICE)"
+	rm -rf "$(IOS_DERIVED)" "$(IOS_DERIVED_DEVICE)" build-archive
