@@ -181,7 +181,11 @@ xcodebuild -exportArchive \
 	"${AUTH[@]}" \
 	| $BEAUTIFY
 
-IPA="$(find "$ARCHIVE_DIR" -maxdepth 1 -name '*.ipa' | head -1)"
+# -print -quit rather than piping to head: head closes the pipe as soon as it
+# has its line, find dies of SIGPIPE, and pipefail makes 141 the status of the
+# assignment — which set -e turns into an exit even though the .ipa is right
+# there. It survives today only because this directory holds one file.
+IPA="$(find "$ARCHIVE_DIR" -maxdepth 1 -name '*.ipa' -print -quit)"
 [ -n "$IPA" ] || { echo "Export produced no .ipa" >&2; exit 1; }
 echo "==> Built $IPA"
 
