@@ -159,8 +159,14 @@ what is already up there. `MARKETING_VERSION` in `project.yml` stays hand-owned.
 ### One-time setup
 
 1. **Create an App Store Connect API key.** *Users and Access → Integrations →
-   App Store Connect API → Team Keys*, role **App Manager**. Note the Key ID and
-   the Issuer ID, and download the `AuthKey_<KEYID>.p8` — Apple serves it once.
+   App Store Connect API → Team Keys*, role **Admin**. Note the Key ID and the
+   Issuer ID, and download the `AuthKey_<KEYID>.p8` — Apple serves it once.
+
+   Admin, not App Manager: cloud signing has to mint an *Apple Distribution*
+   certificate, and only Admin and Account Holder may create one. An App Manager
+   key archives fine and then fails the export with `Cloud signing permission
+   error` / `No profiles for '<bundle id>' were found`. A key's role cannot be
+   changed after it is generated, so getting this wrong means making a new key.
 2. **Put the key where the tools look:**
    ```bash
    mkdir -p ~/.private_keys && mv ~/Downloads/AuthKey_*.p8 ~/.private_keys/
