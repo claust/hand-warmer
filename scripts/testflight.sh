@@ -22,11 +22,14 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
 
-# Load the local, gitignored config first so real environment variables still
-# win over it (handy in CI, where the values arrive as secrets).
+# Fill in only what the environment has not already set, so CI — where the
+# values arrive as secrets — wins over a stale local file. Sourcing the file
+# outright would do the opposite and silently override the secrets.
 if [ -f "$ROOT/.testflight.env" ]; then
-	# shellcheck disable=SC1091
-	set -a && . "$ROOT/.testflight.env" && set +a
+	while IFS='=' read -r key value; do
+		case "$key" in ''|\#*) continue ;; esac
+		[ -z "$(eval "printf '%s' \"\${$key:-}\"")" ] && export "$key=$value"
+	done < "$ROOT/.testflight.env"
 fi
 
 SCHEME="${IOS_SCHEME:-HandWarmer}"
