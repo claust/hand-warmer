@@ -45,6 +45,12 @@ targets:
         # Present but empty: opts into the modern launch-screen system (and
         # full-size rendering on every device) using the default background.
         UILaunchScreen: {}
+        # Answers App Store Connect's export-compliance question in the bundle
+        # rather than by hand per upload — without it every build lands in
+        # TestFlight as "Missing Compliance" and cannot be distributed until
+        # someone clicks through. False is the accurate answer: the app makes no
+        # network connections and uses no encryption of its own.
+        ITSAppUsesNonExemptEncryption: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         # Puts the running session in the Dynamic Island and on the Lock Screen.
