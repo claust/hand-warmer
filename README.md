@@ -132,7 +132,7 @@ battery.
 If you are not the owner of this repo, change `bundleIdPrefix` in
 `project.yml` to something under your own team before running `xcodegen
 generate`. Automatic signing has to register the App ID under your team, and
-`com.claus.HandWarmer` already belongs to someone else.
+`dk.delectosoft.handwarmer` already belongs to someone else.
 
 Launch with the `-autostart` argument to start the warmer automatically
 (used for automated UI verification).
@@ -171,7 +171,7 @@ what is already up there. `MARKETING_VERSION` in `project.yml` stays hand-owned.
    ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
    ```
 4. **Create the app record** in App Store Connect: *Apps → + → New App*,
-   platform iOS, bundle ID `com.claus.HandWarmer`, any SKU. The record cannot be
+   platform iOS, bundle ID `dk.delectosoft.handwarmer`, any SKU. The record cannot be
    created from the command line, and the upload fails without it. Only the
    bundle IDs — app and widget extension — are registered automatically, by
    `xcodebuild -allowProvisioningUpdates`.

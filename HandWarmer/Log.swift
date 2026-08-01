@@ -6,5 +6,5 @@ import os
 ///
 /// Read a device run with:
 ///
-///     log stream --device --predicate 'subsystem == "com.claus.HandWarmer"'
-let heatLog = Logger(subsystem: "com.claus.HandWarmer", category: "boosters")
+///     log stream --device --predicate 'subsystem == "dk.delectosoft.handwarmer"'
+let heatLog = Logger(subsystem: "dk.delectosoft.handwarmer", category: "boosters")

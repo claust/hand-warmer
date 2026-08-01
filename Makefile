@@ -13,7 +13,7 @@ IOS_SCHEME     = HandWarmer
 # Built product name (<IOS_APP_NAME>.app). Keep it in sync with IOS_SCHEME's
 # target PRODUCT_NAME if you override the scheme.
 IOS_APP_NAME   = HandWarmer
-IOS_BUNDLE_ID  = com.claus.HandWarmer
+IOS_BUNDLE_ID  = dk.delectosoft.handwarmer
 IOS_PROJECT    = HandWarmer.xcodeproj
 IOS_SIMULATOR ?= iPhone 17 Pro
 # Simulator destination shared by ios-build and ios-test (and by CI, which
